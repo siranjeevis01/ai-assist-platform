@@ -1,0 +1,74 @@
+<!-- wwwroot/QR_Code.html -->
+<!-- QR Code Component -->
+<div id="whatsapp-qr-container">
+    <h3>Connect WhatsApp</h3>
+    <div id="qr-code-image">
+        <img id="qr-img" src="" alt="WhatsApp QR Code" />
+    </div>
+    <div id="connection-status">Disconnected</div>
+    <button onclick="refreshQRCode()">Refresh QR Code</button>
+</div>
+
+<script>
+let qrRefreshInterval;
+
+async function loadQRCode() {
+    try {
+        const response = await fetch('/api/whatsapp/qr', {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            document.getElementById('qr-img').src = data.qrCode;
+            
+            // Check connection status every 5 seconds
+            if (!qrRefreshInterval) {
+                qrRefreshInterval = setInterval(checkConnectionStatus, 5000);
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load QR code:', error);
+    }
+}
+
+async function checkConnectionStatus() {
+    try {
+        const response = await fetch('/api/whatsapp/status', {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+        
+        if (response.ok) {
+            const status = await response.json();
+            const statusElement = document.getElementById('connection-status');
+            
+            if (status.connected) {
+                statusElement.textContent = 'Connected';
+                statusElement.className = 'connected';
+                clearInterval(qrRefreshInterval);
+                qrRefreshInterval = null;
+            } else {
+                statusElement.textContent = 'Disconnected - Scan QR Code';
+                statusElement.className = 'disconnected';
+            }
+        }
+    } catch (error) {
+        console.error('Failed to check connection status:', error);
+    }
+}
+
+function refreshQRCode() {
+    if (qrRefreshInterval) {
+        clearInterval(qrRefreshInterval);
+        qrRefreshInterval = null;
+    }
+    loadQRCode();
+}
+
+// Initial load
+document.addEventListener('DOMContentLoaded', loadQRCode);
+</script>

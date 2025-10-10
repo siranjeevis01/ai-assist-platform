@@ -1,0 +1,213 @@
+2025-10-10 13:14:41.273 +05:30 [INF] DB tables already exist. Exit install
+2025-10-10 13:14:43.539 +05:30 [INF] Now listening on: http://[::]:5000
+2025-10-10 13:14:43.552 +05:30 [INF] Starting Hangfire Server using job storage: 'Server: 127.0.0.1@AiAgentDb'
+2025-10-10 13:14:43.555 +05:30 [INF] Using the following options for SQL Server job storage:
+2025-10-10 13:14:43.559 +05:30 [INF]     Queue poll interval: 00:00:30.
+2025-10-10 13:14:43.563 +05:30 [INF] Using the following options for Hangfire Server:
+    Worker count: 4
+    Listening queues: 'default', 'critical', 'low'
+    Shutdown timeout: 00:00:15
+    Schedule polling interval: 00:00:15
+2025-10-10 13:14:43.596 +05:30 [INF] Application started. Press Ctrl+C to shut down.
+2025-10-10 13:14:43.601 +05:30 [INF] Hosting environment: Production
+2025-10-10 13:14:43.606 +05:30 [INF] Content root path: D:\Siranjeevi\AIAssist\AiAgentBackend
+2025-10-10 13:14:43.616 +05:30 [INF] Server hp:14320:31cafdaa successfully announced in 20.7428 ms
+2025-10-10 13:14:43.625 +05:30 [INF] Server hp:14320:31cafdaa is starting the registered dispatchers: ServerWatchdog, ServerJobCancellationWatcher, ExpirationManager, CountersAggregator, Worker, DelayedJobScheduler, RecurringJobScheduler...
+2025-10-10 13:14:43.689 +05:30 [INF] Server hp:14320:31cafdaa all the dispatchers started
+2025-10-10 13:14:45.373 +05:30 [INF] Processing Gmail for 0 users
+2025-10-10 13:14:45.413 +05:30 [INF] Syncing Google Calendar for 0 users
+2025-10-10 13:14:45.455 +05:30 [INF] Syncing Trello tasks for 0 users
+2025-10-10 13:14:55.735 +05:30 [INF] HTTP GET /swagger responded 404 in 1376.3617 ms
+2025-10-10 13:15:03.718 +05:30 [INF] HTTP GET / responded 200 in 39.5948 ms
+2025-10-10 13:15:27.718 +05:30 [INF] HTTP GET /swagger responded 404 in 2.9037 ms
+2025-10-10 13:15:54.236 +05:30 [INF] HTTP GET /swagger responded 404 in 0.1684 ms
+2025-10-10 13:16:13.728 +05:30 [INF] Processing Gmail for 0 users
+2025-10-10 13:16:13.753 +05:30 [INF] Syncing Google Calendar for 0 users
+2025-10-10 13:16:13.775 +05:30 [INF] Syncing Trello tasks for 0 users
+2025-10-10 13:19:28.046 +05:30 [INF] Server hp:14320:31cafdaa caught stopping signal...
+2025-10-10 13:19:28.053 +05:30 [INF] Application is shutting down...
+2025-10-10 13:19:28.057 +05:30 [INF] Server hp:14320:31cafdaa All dispatchers stopped
+2025-10-10 13:19:28.067 +05:30 [INF] Server hp:14320:31cafdaa successfully reported itself as stopped in 3.111 ms
+2025-10-10 13:19:28.070 +05:30 [INF] Server hp:14320:31cafdaa has been stopped in total 17.0864 ms
+2025-10-10 13:25:47.539 +05:30 [INF] DB tables already exist. Exit install
+2025-10-10 13:25:49.223 +05:30 [INF] Now listening on: http://[::]:5000
+2025-10-10 13:25:49.234 +05:30 [INF] Starting Hangfire Server using job storage: 'Server: 127.0.0.1@AiAgentDb'
+2025-10-10 13:25:49.239 +05:30 [INF] Using the following options for SQL Server job storage:
+2025-10-10 13:25:49.243 +05:30 [INF]     Queue poll interval: 00:00:30.
+2025-10-10 13:25:49.246 +05:30 [INF] Using the following options for Hangfire Server:
+    Worker count: 4
+    Listening queues: 'default', 'critical', 'low'
+    Shutdown timeout: 00:00:15
+    Schedule polling interval: 00:00:15
+2025-10-10 13:25:49.268 +05:30 [INF] Application started. Press Ctrl+C to shut down.
+2025-10-10 13:25:49.276 +05:30 [INF] Hosting environment: Production
+2025-10-10 13:25:49.280 +05:30 [INF] Content root path: D:\Siranjeevi\AIAssist\AiAgentBackend
+2025-10-10 13:25:49.290 +05:30 [INF] Server hp:10244:0b8b89e1 successfully announced in 18.2787 ms
+2025-10-10 13:25:49.300 +05:30 [INF] Server hp:10244:0b8b89e1 is starting the registered dispatchers: ServerWatchdog, ServerJobCancellationWatcher, ExpirationManager, CountersAggregator, Worker, DelayedJobScheduler, RecurringJobScheduler...
+2025-10-10 13:25:49.343 +05:30 [INF] Server hp:10244:0b8b89e1 all the dispatchers started
+2025-10-10 13:26:20.444 +05:30 [INF] Syncing Trello tasks for 0 users
+2025-10-10 13:26:20.444 +05:30 [INF] Syncing Google Calendar for 0 users
+2025-10-10 13:26:20.444 +05:30 [INF] Processing Gmail for 0 users
+2025-10-10 13:31:20.993 +05:30 [INF] Processing Gmail for 0 users
+2025-10-10 13:31:20.994 +05:30 [INF] Syncing Google Calendar for 0 users
+2025-10-10 13:31:20.995 +05:30 [INF] Syncing Trello tasks for 0 users
+2025-10-10 13:35:21.290 +05:30 [INF] Processing Gmail for 0 users
+2025-10-10 13:35:21.294 +05:30 [INF] Syncing Google Calendar for 0 users
+2025-10-10 13:35:21.296 +05:30 [INF] Syncing Trello tasks for 0 users
+2025-10-10 13:36:08.274 +05:30 [INF] HTTP GET /api/Users/me responded 401 in 2658.4832 ms
+2025-10-10 13:37:08.410 +05:30 [INF] User registered: siranjeevi@neolysi.com
+2025-10-10 13:37:08.449 +05:30 [INF] HTTP POST /api/Auth/register responded 200 in 972.3988 ms
+2025-10-10 13:37:36.911 +05:30 [INF] User logged in: siranjeevi@neolysi.com
+2025-10-10 13:37:36.949 +05:30 [INF] HTTP POST /api/Auth/login responded 200 in 138.0077 ms
+2025-10-10 13:38:12.759 +05:30 [INF] HTTP GET /api/Users/me responded 200 in 159.5267 ms
+2025-10-10 13:38:41.542 +05:30 [INF] HTTP GET /api/google/status responded 200 in 53.9683 ms
+2025-10-10 13:38:52.782 +05:30 [INF] Google OAuth URL requested for user 1
+2025-10-10 13:38:52.826 +05:30 [INF] HTTP GET /api/google/connect-url responded 200 in 53.3185 ms
+2025-10-10 13:39:44.514 +05:30 [INF] Google connected successfully for user 1
+2025-10-10 13:39:44.530 +05:30 [INF] HTTP GET /api/google/callback responded 302 in 803.6987 ms
+2025-10-10 13:39:44.583 +05:30 [INF] HTTP GET /dashboard.html responded 200 in 31.2596 ms
+2025-10-10 13:39:45.076 +05:30 [INF] HTTP GET /api/Events responded 401 in 13.6029 ms
+2025-10-10 13:39:45.076 +05:30 [INF] HTTP GET /api/Tasks responded 401 in 9.9608 ms
+2025-10-10 13:39:45.082 +05:30 [INF] HTTP GET /api/Users/me responded 401 in 1.7788 ms
+2025-10-10 13:39:57.790 +05:30 [INF] HTTP GET /api/google/status responded 200 in 41.5389 ms
+2025-10-10 13:40:49.186 +05:30 [INF] HTTP GET /api/Events responded 200 in 97.8603 ms
+2025-10-10 13:41:09.769 +05:30 [INF] HTTP GET /api/Tasks responded 200 in 87.8498 ms
+2025-10-10 13:41:22.813 +05:30 [INF] Syncing Google Calendar for 1 users
+2025-10-10 13:41:22.813 +05:30 [INF] Processing Gmail for 1 users
+2025-10-10 13:41:22.864 +05:30 [INF] Syncing Trello tasks for 0 users
+2025-10-10 13:41:22.944 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-10 13:41:24.469 +05:30 [INF] Synced Google Calendar events for user 1
+2025-10-10 13:41:27.742 +05:30 [WRN] User 1 has no phone number
+2025-10-10 13:41:27.761 +05:30 [WRN] User 1 has no phone number
+2025-10-10 13:41:27.781 +05:30 [WRN] User 1 has no phone number
+2025-10-10 13:41:27.800 +05:30 [WRN] User 1 has no phone number
+2025-10-10 13:41:27.816 +05:30 [WRN] User 1 has no phone number
+2025-10-10 13:41:37.201 +05:30 [ERR] Error getting status for user 1
+System.Net.Http.HttpRequestException: No such host is known. (whatsapp-bot:3001)
+ ---> System.Net.Sockets.SocketException (11001): No such host is known.
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Net.Sockets.Socket.<ConnectAsync>g__WaitForConnectWithCancellation|285_0(AwaitableSocketAsyncEventArgs saea, ValueTask connectTask, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectToTcpHostAsync(String host, Int32 port, HttpRequestMessage initialRequest, Boolean async, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at System.Net.Http.HttpConnectionPool.ConnectToTcpHostAsync(String host, Int32 port, HttpRequestMessage initialRequest, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.CreateHttp11ConnectionAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.AddHttp11ConnectionAsync(QueueItem queueItem)
+   at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
+   at System.Net.Http.DiagnosticsHandler.SendAsyncCore(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.RedirectHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler.<SendCoreAsync>g__Core|5_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler.<SendCoreAsync>g__Core|5_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
+   at AiAgentBackend.Services.Integrations.HttpWhatsAppService.GetStatusAsync(Int32 userId) in D:\Siranjeevi\AIAssist\AiAgentBackend\Services\Integrations\HttpWhatsAppService.cs:line 102
+2025-10-10 13:41:37.330 +05:30 [INF] HTTP GET /api/WhatsApp/status responded 200 in 7071.7300 ms
+2025-10-10 13:42:04.019 +05:30 [ERR] Error initializing connection for user 1
+System.Net.Http.HttpRequestException: No such host is known. (whatsapp-bot:3001)
+ ---> System.Net.Sockets.SocketException (11001): No such host is known.
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Net.Sockets.Socket.<ConnectAsync>g__WaitForConnectWithCancellation|285_0(AwaitableSocketAsyncEventArgs saea, ValueTask connectTask, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectToTcpHostAsync(String host, Int32 port, HttpRequestMessage initialRequest, Boolean async, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at System.Net.Http.HttpConnectionPool.ConnectToTcpHostAsync(String host, Int32 port, HttpRequestMessage initialRequest, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.CreateHttp11ConnectionAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.AddHttp11ConnectionAsync(QueueItem queueItem)
+   at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
+   at System.Net.Http.DiagnosticsHandler.SendAsyncCore(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.RedirectHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler.<SendCoreAsync>g__Core|5_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler.<SendCoreAsync>g__Core|5_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
+   at AiAgentBackend.Services.Integrations.HttpWhatsAppService.InitializeConnectionAsync(Int32 userId) in D:\Siranjeevi\AIAssist\AiAgentBackend\Services\Integrations\HttpWhatsAppService.cs:line 88
+2025-10-10 13:42:04.229 +05:30 [INF] HTTP POST /api/WhatsApp/connect responded 200 in 7063.4490 ms
+2025-10-10 13:44:26.511 +05:30 [ERR] Error getting QR code for user 1
+System.Net.Http.HttpRequestException: No such host is known. (whatsapp-bot:3001)
+ ---> System.Net.Sockets.SocketException (11001): No such host is known.
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Net.Sockets.Socket.<ConnectAsync>g__WaitForConnectWithCancellation|285_0(AwaitableSocketAsyncEventArgs saea, ValueTask connectTask, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectToTcpHostAsync(String host, Int32 port, HttpRequestMessage initialRequest, Boolean async, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at System.Net.Http.HttpConnectionPool.ConnectToTcpHostAsync(String host, Int32 port, HttpRequestMessage initialRequest, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.CreateHttp11ConnectionAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.AddHttp11ConnectionAsync(QueueItem queueItem)
+   at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
+   at System.Net.Http.DiagnosticsHandler.SendAsyncCore(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.RedirectHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler.<SendCoreAsync>g__Core|5_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler.<SendCoreAsync>g__Core|5_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
+   at AiAgentBackend.Services.Integrations.HttpWhatsAppService.GetQrCodeAsync(Int32 userId) in D:\Siranjeevi\AIAssist\AiAgentBackend\Services\Integrations\HttpWhatsAppService.cs:line 68
+2025-10-10 13:44:26.705 +05:30 [INF] HTTP GET /api/WhatsApp/qr responded 200 in 7056.0261 ms
+2025-10-10 13:45:04.154 +05:30 [ERR] Error getting status for user 1
+System.Net.Http.HttpRequestException: No such host is known. (whatsapp-bot:3001)
+ ---> System.Net.Sockets.SocketException (11001): No such host is known.
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Net.Sockets.Socket.<ConnectAsync>g__WaitForConnectWithCancellation|285_0(AwaitableSocketAsyncEventArgs saea, ValueTask connectTask, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectToTcpHostAsync(String host, Int32 port, HttpRequestMessage initialRequest, Boolean async, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at System.Net.Http.HttpConnectionPool.ConnectToTcpHostAsync(String host, Int32 port, HttpRequestMessage initialRequest, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.CreateHttp11ConnectionAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.AddHttp11ConnectionAsync(QueueItem queueItem)
+   at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
+   at System.Net.Http.DiagnosticsHandler.SendAsyncCore(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.RedirectHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler.<SendCoreAsync>g__Core|5_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler.<SendCoreAsync>g__Core|5_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
+   at AiAgentBackend.Services.Integrations.HttpWhatsAppService.GetStatusAsync(Int32 userId) in D:\Siranjeevi\AIAssist\AiAgentBackend\Services\Integrations\HttpWhatsAppService.cs:line 102
+2025-10-10 13:45:04.318 +05:30 [INF] HTTP GET /api/WhatsApp/test responded 400 in 7052.0353 ms
+2025-10-10 13:45:23.317 +05:30 [INF] Processing Gmail for 1 users
+2025-10-10 13:45:23.333 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-10 13:45:23.444 +05:30 [INF] Syncing Google Calendar for 1 users
+2025-10-10 13:45:24.249 +05:30 [INF] Synced Google Calendar events for user 1
+2025-10-10 13:45:25.313 +05:30 [INF] Syncing Trello tasks for 0 users
+2025-10-10 13:45:29.265 +05:30 [WRN] User 1 has no phone number
+2025-10-10 13:45:29.303 +05:30 [WRN] User 1 has no phone number
+2025-10-10 13:45:29.329 +05:30 [WRN] User 1 has no phone number
+2025-10-10 13:45:29.347 +05:30 [WRN] User 1 has no phone number
+2025-10-10 13:45:29.364 +05:30 [WRN] User 1 has no phone number
+2025-10-10 13:50:26.246 +05:30 [INF] Processing Gmail for 1 users
+2025-10-10 13:50:26.262 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-10 13:50:26.297 +05:30 [INF] Syncing Google Calendar for 1 users
+2025-10-10 13:50:26.313 +05:30 [INF] Syncing Trello tasks for 0 users
+2025-10-10 13:50:27.054 +05:30 [INF] Synced Google Calendar events for user 1
+2025-10-10 13:50:30.493 +05:30 [WRN] User 1 has no phone number
+2025-10-10 13:50:30.508 +05:30 [WRN] User 1 has no phone number
+2025-10-10 13:50:30.557 +05:30 [WRN] User 1 has no phone number
+2025-10-10 13:50:30.627 +05:30 [WRN] User 1 has no phone number
+2025-10-10 13:50:30.716 +05:30 [WRN] User 1 has no phone number
+2025-10-10 13:56:29.124 +05:30 [INF] Processing Gmail for 1 users
+2025-10-10 13:56:29.130 +05:30 [INF] Syncing Google Calendar for 1 users
+2025-10-10 13:56:29.141 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-10 13:56:29.495 +05:30 [INF] Syncing Trello tasks for 0 users
+2025-10-10 13:56:30.159 +05:30 [INF] Synced Google Calendar events for user 1
+2025-10-10 13:56:33.303 +05:30 [WRN] User 1 has no phone number
+2025-10-10 13:56:33.315 +05:30 [WRN] User 1 has no phone number
+2025-10-10 13:56:33.335 +05:30 [WRN] User 1 has no phone number
+2025-10-10 13:56:33.354 +05:30 [WRN] User 1 has no phone number
+2025-10-10 13:56:33.369 +05:30 [WRN] User 1 has no phone number
+2025-10-10 14:00:31.097 +05:30 [INF] Processing Gmail for 1 users
+2025-10-10 14:00:31.111 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-10 14:00:31.178 +05:30 [INF] Syncing Google Calendar for 1 users
+2025-10-10 14:00:31.285 +05:30 [INF] Syncing Trello tasks for 0 users
+2025-10-10 14:00:32.070 +05:30 [INF] Synced Google Calendar events for user 1
+2025-10-10 14:00:34.871 +05:30 [WRN] User 1 has no phone number
+2025-10-10 14:00:34.887 +05:30 [WRN] User 1 has no phone number
+2025-10-10 14:00:34.921 +05:30 [WRN] User 1 has no phone number
+2025-10-10 14:00:34.973 +05:30 [WRN] User 1 has no phone number
+2025-10-10 14:00:34.997 +05:30 [WRN] User 1 has no phone number
+2025-10-10 14:02:59.540 +05:30 [INF] Server hp:10244:0b8b89e1 caught stopping signal...
+2025-10-10 14:02:59.565 +05:30 [INF] Application is shutting down...
+2025-10-10 14:02:59.584 +05:30 [INF] Server hp:10244:0b8b89e1 All dispatchers stopped
+2025-10-10 14:02:59.606 +05:30 [INF] Server hp:10244:0b8b89e1 successfully reported itself as stopped in 5.3409 ms
+2025-10-10 14:02:59.617 +05:30 [INF] Server hp:10244:0b8b89e1 has been stopped in total 52.5184 ms

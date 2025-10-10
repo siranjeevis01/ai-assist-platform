@@ -1,0 +1,13 @@
+# build artifacts
+bin/
+obj/
+# user secrets
+*.user
+*.swp
+*.suo
+.vscode/
+.idea/
+.env
+.env.*
+/migrations/
+/Migrations/

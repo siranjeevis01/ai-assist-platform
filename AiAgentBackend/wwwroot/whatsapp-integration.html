@@ -1,0 +1,323 @@
+<!-- wwwroot/whatsapp-integration.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Integration - AI Agent</title>
+    <style>
+        .whatsapp-integration {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .status-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .status-connected {
+            border-left: 4px solid #25D366;
+        }
+        
+        .status-disconnected {
+            border-left: 4px solid #FF4757;
+        }
+        
+        .qr-container {
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+        }
+        
+        .qr-code {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: bold;
+        }
+        
+        .btn-primary {
+            background: #25D366;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #128C7E;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #FF4757;
+            color: white;
+        }
+        
+        .message-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #25D366;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="whatsapp-integration">
+        <h1>📱 WhatsApp Integration</h1>
+        
+        <div id="statusCard" class="status-card status-disconnected">
+            <h3>Connection Status</h3>
+            <p id="statusText">Disconnected</p>
+            <div id="connectionTime"></div>
+        </div>
+        
+        <div id="qrContainer" class="qr-container" style="display: none;">
+            <h3>Scan QR Code to Connect</h3>
+            <div class="qr-code">
+                <img id="qrImage" src="" alt="WhatsApp QR Code" style="width: 100%; height: 100%;">
+            </div>
+            <p>Open WhatsApp → Settings → Linked Devices → Link a Device</p>
+            <button onclick="refreshQrCode()" class="btn btn-secondary">Refresh QR Code</button>
+        </div>
+        
+        <div id="connectedActions" style="display: none;">
+            <h3>Send Test Message</h3>
+            <input type="text" id="messageInput" class="message-input" placeholder="Type your message...">
+            <button onclick="sendMessage()" class="btn btn-primary">Send Message</button>
+            <button onclick="testConnection()" class="btn btn-secondary">Test Connection</button>
+        </div>
+        
+        <div id="loading" style="display: none;">
+            <div class="loading"></div>
+            <p>Processing...</p>
+        </div>
+        
+        <div id="error" style="display: none; color: red;"></div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/whatsapp';
+        const token = localStorage.getItem('authToken'); // Get from your auth system
+
+        async function checkStatus() {
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE}/status`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const status = await response.json();
+                    updateStatusUI(status);
+                } else {
+                    showError('Failed to check status');
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function initializeConnection() {
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE}/connect`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    await checkStatus();
+                    await getQrCode();
+                } else {
+                    showError('Failed to initialize connection');
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function getQrCode() {
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE}/qr`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('qrImage').src = data.qrCode;
+                    document.getElementById('qrContainer').style.display = 'block';
+                } else {
+                    showError('Failed to get QR code');
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function sendMessage() {
+            const message = document.getElementById('messageInput').value;
+            if (!message) {
+                showError('Please enter a message');
+                return;
+            }
+
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE}/send`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        alert('Message sent successfully!');
+                        document.getElementById('messageInput').value = '';
+                    } else {
+                        showError('Failed to send message');
+                    }
+                } else {
+                    showError('Failed to send message');
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function testConnection() {
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE}/test`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        alert('Test message sent successfully! Check your WhatsApp.');
+                    } else {
+                        showError('Test failed: ' + result.message);
+                    }
+                } else {
+                    showError('Test failed');
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function updateStatusUI(status) {
+            const statusCard = document.getElementById('statusCard');
+            const statusText = document.getElementById('statusText');
+            const connectionTime = document.getElementById('connectionTime');
+            const qrContainer = document.getElementById('qrContainer');
+            const connectedActions = document.getElementById('connectedActions');
+
+            if (status.connected) {
+                statusCard.className = 'status-card status-connected';
+                statusText.textContent = 'Connected ✅';
+                connectionTime.textContent = `Connected since: ${new Date().toLocaleTimeString()}`;
+                qrContainer.style.display = 'none';
+                connectedActions.style.display = 'block';
+            } else {
+                statusCard.className = 'status-card status-disconnected';
+                statusText.textContent = 'Disconnected ❌';
+                connectionTime.textContent = '';
+                connectedActions.style.display = 'none';
+                
+                if (status.hasQrCode) {
+                    qrContainer.style.display = 'block';
+                } else {
+                    // Show connect button if no QR code available
+                    const connectBtn = document.createElement('button');
+                    connectBtn.className = 'btn btn-primary';
+                    connectBtn.textContent = 'Connect WhatsApp';
+                    connectBtn.onclick = initializeConnection;
+                    statusCard.appendChild(connectBtn);
+                }
+            }
+        }
+
+        function refreshQrCode() {
+            getQrCode();
+        }
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            checkStatus();
+            // Auto-refresh status every 30 seconds
+            setInterval(checkStatus, 30000);
+        });
+    </script>
+</body>
+</html>
