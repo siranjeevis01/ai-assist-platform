@@ -16,9 +16,9 @@ namespace AiAgentBackend.Data
         public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
-        public DbSet<WhatsAppSession> WhatsAppSessions { get; set; }
-        public DbSet<GmailWebhook> GmailWebhooks { get; set; }
-        public DbSet<ConversationState> ConversationStates { get; set; }
+        public DbSet<WhatsAppSession> WhatsAppSessions => Set<WhatsAppSession>();
+        public DbSet<GmailWebhook> GmailWebhooks => Set<GmailWebhook>();
+        public DbSet<ConversationState> ConversationStates => Set<ConversationState>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -49,6 +49,10 @@ namespace AiAgentBackend.Data
                 entity.HasMany(u => u.RefreshTokens)
                     .WithOne(rt => rt.User)
                     .HasForeignKey(rt => rt.UserId);
+                    
+                entity.HasMany(u => u.ChatMessages)
+                    .WithOne(cm => cm.User)
+                    .HasForeignKey(cm => cm.UserId);
             });
             
             // Event configurations
@@ -70,53 +74,20 @@ namespace AiAgentBackend.Data
                 entity.HasIndex(t => new { t.UserId, t.Status });
             });
             
-            // ProviderToken configurations
-            modelBuilder.Entity<ProviderToken>(entity =>
+            // WhatsApp Session
+            modelBuilder.Entity<WhatsAppSession>(entity =>
             {
-                entity.HasIndex(pt => new { pt.UserId, pt.Provider }).IsUnique();
-                entity.HasIndex(pt => pt.ExpiresAt);
+                entity.HasIndex(ws => ws.IsConnected);
+                entity.HasIndex(ws => ws.LastCheckedAt);
             });
             
-            // RefreshToken configurations
-            modelBuilder.Entity<RefreshToken>(entity =>
-            {
-                entity.HasIndex(rt => rt.Token).IsUnique();
-                entity.HasIndex(rt => rt.UserId);
-                entity.HasIndex(rt => rt.ExpiresAt);
-            });
-            
-            // Message configurations
-            modelBuilder.Entity<Message>(entity =>
-            {
-                entity.HasIndex(m => m.UserId);
-                entity.HasIndex(m => m.Channel);
-                entity.HasIndex(m => m.CreatedAt);
-                entity.HasIndex(m => new { m.UserId, m.CreatedAt });
-            });
-            
-            // ChatMessage configurations
-            modelBuilder.Entity<ChatMessage>(entity =>
-            {
-                entity.HasIndex(cm => cm.UserId);
-                entity.HasIndex(cm => cm.CreatedAt);
-                entity.HasIndex(cm => new { cm.UserId, cm.CreatedAt });
-            });
-            
-            // AuditLog configurations
-            modelBuilder.Entity<AuditLog>(entity =>
-            {
-                entity.HasIndex(al => al.UserId);
-                entity.HasIndex(al => al.Timestamp);
-                entity.HasIndex(al => new { al.Entity, al.Action });
-            });
-
-            // ConversationState method
+            // Conversation State
             modelBuilder.Entity<ConversationState>(entity =>
             {
                 entity.HasIndex(cs => cs.UserId);
                 entity.HasIndex(cs => cs.ExpiresAt);
                 entity.Property(cs => cs.ContextData).HasColumnType("TEXT");
-            });            
+            });
         }
     }
 }

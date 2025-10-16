@@ -17,19 +17,15 @@ using Serilog;
 using AiAgentBackend.Jobs;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.OpenApi.Models;
+using Microsoft.Extensions.Diagnostics.HealthChecks; 
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Kestrel for HTTP only in production
+// Configure Kestrel for HTTP only on port 5000
 builder.WebHost.ConfigureKestrel(serverOptions =>
 {
     serverOptions.AddServerHeader = false;
-    
-    // HTTP only - remove HTTPS for containerized environment
-    serverOptions.ListenAnyIP(5000, listenOptions =>
-    {
-        listenOptions.UseConnectionLogging();
-    });
+    serverOptions.ListenAnyIP(5000); // Only port 5000
 });
 
 // Serilog
@@ -43,23 +39,28 @@ builder.Host.UseSerilog((context, configuration) =>
 });
 
 // DbContext (MySQL)
-var conn = builder.Configuration.GetConnectionString("DefaultConnection");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseMySql(conn, ServerVersion.AutoDetect(conn),
-    sqlOptions =>
+{
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), 
+    mysqlOptions => 
     {
-        sqlOptions.EnableRetryOnFailure(
+        mysqlOptions.EnableRetryOnFailure(
             maxRetryCount: 5,
-            maxRetryDelay: TimeSpan.FromSeconds(30), // FIXED: Changed = to :
+            maxRetryDelay: TimeSpan.FromSeconds(30),
             errorNumbersToAdd: null);
-    }));
+        mysqlOptions.CommandTimeout(60);
+    });
+    options.EnableSensitiveDataLogging(builder.Environment.IsDevelopment());
+    options.EnableDetailedErrors(builder.Environment.IsDevelopment());
+});
 
 // Hangfire
 builder.Services.AddHangfire(config =>
 {
     config.UseSimpleAssemblyNameTypeSerializer()
           .UseRecommendedSerializerSettings()
-          .UseStorage(new MySqlStorage(conn, new MySqlStorageOptions
+          .UseStorage(new MySqlStorage(connectionString, new MySqlStorageOptions
           {
               QueuePollInterval = TimeSpan.FromSeconds(30),
               JobExpirationCheckInterval = TimeSpan.FromHours(1),
@@ -71,25 +72,27 @@ builder.Services.AddHangfire(config =>
 });
 builder.Services.AddHangfireServer(options =>
 {
-    options.WorkerCount = Math.Max(Environment.ProcessorCount, 2);
-    options.Queues = new[] { "default", "critical", "low" };
+    options.WorkerCount = Math.Max(Environment.ProcessorCount, 4);
+    options.Queues = new[] { "critical", "default", "low" };
+    options.SchedulePollingInterval = TimeSpan.FromSeconds(15);
+    options.ServerCheckInterval = TimeSpan.FromSeconds(30);
+    options.ServerTimeout = TimeSpan.FromMinutes(5);
+    options.HeartbeatInterval = TimeSpan.FromSeconds(30);
 });
 
-// Options
+// Options - Register all configuration sections
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<WhatsAppOptions>(builder.Configuration.GetSection("WhatsApp"));
 builder.Services.Configure<GoogleOptions>(builder.Configuration.GetSection("Google"));
+builder.Services.Configure<SmtpOptions>(builder.Configuration.GetSection("Smtp"));
 builder.Services.Configure<TrelloOptions>(builder.Configuration.GetSection("Trello"));
+builder.Services.Configure<OpenAIOptions>(builder.Configuration.GetSection("OpenAI"));
 
 // Auth / JWT
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "fallback-dev-key-change-in-production-with-32-char-secret";
-var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "AiAgentBackend";
-var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "AiAgentUsers";
-
-if (jwtKey.Length < 32)
-{
-    throw new InvalidOperationException("JWT Key must be at least 32 characters long for production");
-}
+var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>() ?? new JwtOptions();
+var jwtKey = jwtOptions.Key ?? "super-secure-32-char-key-1234567890123456";
+var jwtIssuer = jwtOptions.Issuer ?? "AiAgentBackend";
+var jwtAudience = jwtOptions.Audience ?? "AiAgentUsers";
 
 builder.Services.AddAuthentication(opt =>
 {
@@ -126,57 +129,55 @@ builder.Services.AddAuthentication(opt =>
     };
 });
 
-// DI: Services
+// HttpClient support
+builder.Services.AddHttpClient();
+
+// Core Services
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
-builder.Services.AddHttpClient<INlpService, OpenAiNlpService>();
+builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<INlpService, NlpService>();
+
+// Integration Services
 builder.Services.AddScoped<IGoogleCalendarService, GoogleCalendarService>();
 builder.Services.AddScoped<ITrelloService, TrelloService>();
-builder.Services.AddScoped<ReminderJob>();
-builder.Services.AddScoped<GmailPollingJob>();
-
-// Gmail Services
-builder.Services.AddScoped<IGmailService, EnhancedGmailService>();
-builder.Services.AddScoped<IEnhancedGmailService, EnhancedGmailService>();
-
-// WhatsApp Services
-builder.Services.Configure<WhatsAppOptions>(builder.Configuration.GetSection("WhatsApp"));
-builder.Services.AddHttpClient<IHttpWhatsAppService, HttpWhatsAppService>();
-
-// Other enhanced services
-builder.Services.AddScoped<IProactiveNotificationService, ProactiveNotificationService>();
 builder.Services.AddScoped<IConversationStateService, ConversationStateService>();
 
-// Command Orchestrators
-builder.Services.AddScoped<ICommandOrchestrator, CommandOrchestrator>();
-builder.Services.AddScoped<IEnhancedCommandOrchestrator, EnhancedCommandOrchestrator>();
+// Gmail Service
+builder.Services.AddScoped<IGmailService, GmailService>();
 
-// Free NLP Service as fallback
-// builder.Services.AddHttpClient<INlpService, FreeNlpService>();
+// WhatsApp Service configuration
+builder.Services.AddSingleton<WhatsAppBackgroundService>();
+builder.Services.AddScoped<IWhatsAppService, RealWhatsAppWebService>();
 
-// NLP Services with fallback chain
-builder.Services.AddHttpClient<OpenAiNlpService>();
-builder.Services.AddHttpClient<FreeNlpService>();
-builder.Services.AddScoped<INlpService, EnhancedNlpService>();
+// Proactive Services
+builder.Services.AddScoped<IProactiveNotificationService, ProactiveNotificationService>();
 
-// HTTP Client for WhatsApp services with retry policy
-builder.Services.AddHttpClient("WhatsAppBot", client =>
+// HttpClient configuration
+builder.Services.AddHttpClient("whatsapp", client =>
 {
-    client.Timeout = TimeSpan.FromSeconds(30);
+    client.Timeout = TimeSpan.FromSeconds(60);
     client.DefaultRequestHeaders.Add("User-Agent", "AiAgentBackend/1.0");
 });
+
+// Command Orchestrator
+builder.Services.AddScoped<ICommandOrchestrator, CommandOrchestrator>();
+
+// Background Jobs
+builder.Services.AddScoped<ReminderJob>();
+builder.Services.AddScoped<GmailPollingJob>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// Enhanced Swagger configuration - ALWAYS enable Swagger
+// Enhanced Swagger configuration with localhost:5000
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "AiAgentBackend API",
         Version = "v1",
-        Description = "AI Agent Backend Service",
+        Description = "AI Agent Backend Service with Integrated WhatsApp",
         Contact = new OpenApiContact
         {
             Name = "AI Agent Team",
@@ -209,71 +210,59 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }
     });
-
-    // Include XML comments if available
-    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    if (File.Exists(xmlPath))
-    {
-        c.IncludeXmlComments(xmlPath);
-    }
 });
 
 builder.Services.AddSignalR(options =>
 {
     options.EnableDetailedErrors = builder.Environment.IsDevelopment();
-    options.MaximumReceiveMessageSize = 1024 * 1024; // 1MB
+    options.MaximumReceiveMessageSize = 1024 * 1024;
 });
 
-// CORS policies
+// CORS - Allow both frontend and backend ports
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("DevelopmentPolicy", policy =>
+    options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5000", "http://localhost:3000", "http://localhost:3001")
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials();
-    });
-
-    options.AddPolicy("ProductionPolicy", policy =>
-    {
-        policy.WithOrigins("http://backend:5000", "http://whatsapp-bot:3001")
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials();
-    });
-
-    options.AddPolicy("DockerNetworkPolicy", policy =>
-    {
-        policy.SetIsOriginAllowed(origin => true)
+        policy.WithOrigins("http://localhost:3000", "http://localhost:5000")
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
     });
 });
 
-// SIMPLE Health Check
-builder.Services.AddHealthChecks();
+// Enhanced health checks
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<ApplicationDbContext>()
+    .AddCheck<WhatsAppHealthCheck>("whatsapp_connection");
 
 var app = builder.Build();
 
+// Database initialization
+try
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var canConnect = await db.Database.CanConnectAsync();
+        Console.WriteLine($"✅ Database connection: {(canConnect ? "Success" : "Failed")}");
+        
+        if (canConnect)
+        {
+            await db.Database.EnsureCreatedAsync();
+            Console.WriteLine("✅ Database tables verified");
+        }
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"❌ Database initialization failed: {ex.Message}");
+}
+
 // Middleware
 app.UseMiddleware<ErrorHandlingMiddleware>();
+app.UseCors("AllowFrontend");
 
-// Apply CORS based on environment
-if (app.Environment.IsDevelopment())
-{
-    app.UseCors("DevelopmentPolicy");
-    Console.WriteLine("🔧 Running in DEVELOPMENT mode");
-}
-else
-{
-    app.UseCors("DockerNetworkPolicy");
-    Console.WriteLine("🚀 Running in PRODUCTION mode");
-}
-
-// ALWAYS enable Swagger in all environments
+// Swagger - Configure for localhost:5000
 app.UseSwagger(c =>
 {
     c.RouteTemplate = "swagger/{documentName}/swagger.json";
@@ -281,7 +270,7 @@ app.UseSwagger(c =>
     {
         swaggerDoc.Servers = new List<OpenApiServer>
         {
-            new OpenApiServer { Url = $"{httpReq.Scheme}://{httpReq.Host.Value}" }
+            new OpenApiServer { Url = "http://localhost:5000" } // Only localhost:5000
         };
     });
 });
@@ -289,7 +278,7 @@ app.UseSwagger(c =>
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "AiAgentBackend v1");
-    c.RoutePrefix = "swagger"; // Always use /swagger route
+    c.RoutePrefix = "swagger";
     c.DisplayRequestDuration();
     c.EnableDeepLinking();
     c.EnableFilter();
@@ -311,72 +300,153 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
 });
 
 // Health check endpoint
-app.MapGet("/health", () => 
+app.MapGet("/health/real-time", async (IServiceProvider serviceProvider) =>
 {
-    return Results.Json(new { 
-        status = "Healthy",
-        timestamp = DateTime.UtcNow,
-        service = "AiAgentBackend"
-    });
+    using var scope = serviceProvider.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var whatsAppService = scope.ServiceProvider.GetRequiredService<IWhatsAppService>();
+    var backgroundJobClient = scope.ServiceProvider.GetRequiredService<IBackgroundJobClient>();
+    
+    try
+    {
+        var whatsAppStatus = await whatsAppService.GetStatusAsync();
+        var usersCount = await db.Users.CountAsync();
+        var activeTasks = await db.Tasks.CountAsync(t => t.Status != "Done");
+        var pendingEvents = await db.Events.CountAsync(e => e.StartUtc >= DateTime.UtcNow);
+        var unreadMessages = await db.Messages.CountAsync(m => m.Direction == "Incoming");
+        
+        var monitoringApi = JobStorage.Current.GetMonitoringApi();
+        var servers = monitoringApi.Servers();
+        var jobs = servers.Count;
+        
+        // Check database connectivity
+        var dbConnected = await db.Database.CanConnectAsync();
+        
+        // Check Hangfire connectivity
+        var hangfireConnected = jobs > 0;
+        
+        // Check WhatsApp connectivity
+        var whatsAppConnected = await whatsAppService.CheckConnectionStatusAsync();
+        
+        var overallStatus = dbConnected && hangfireConnected ? "Healthy" : "Degraded";
+        if (!dbConnected) overallStatus = "Unhealthy";
+        
+        return Results.Json(new 
+        {
+            status = overallStatus,
+            timestamp = DateTime.UtcNow,
+            services = new
+            {
+                database = dbConnected ? "Connected" : "Disconnected",
+                whatsapp = whatsAppConnected ? "Connected" : "Disconnected",
+                hangfire = hangfireConnected ? "Running" : "Stopped",
+                signalr = "Active"
+            },
+            metrics = new
+            {
+                users = usersCount,
+                active_tasks = activeTasks,
+                pending_events = pendingEvents,
+                unread_messages = unreadMessages,
+                background_jobs = jobs,
+                hangfire_servers = servers.Count
+            },
+            whatsapp_details = new
+            {
+                connected = whatsAppStatus.IsConnected,
+                qr_available = whatsAppStatus.QrAvailable,
+                initializing = whatsAppStatus.IsInitializing,
+                status = whatsAppStatus.Status,
+                last_checked = whatsAppStatus.Timestamp
+            },
+            connections = new
+            {
+                database_connection_string = dbConnected ? "Valid" : "Invalid",
+                hangfire_storage = hangfireConnected ? "Accessible" : "Inaccessible"
+            }
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new 
+        {
+            status = "Unhealthy",
+            timestamp = DateTime.UtcNow,
+            error = ex.Message,
+            details = ex.StackTrace,
+            inner_exception = ex.InnerException?.Message
+        }, statusCode: 503);
+    }
+});
+
+app.MapGet("/whatsapp-status", async (IWhatsAppService whatsAppService) =>
+{
+    var status = await whatsAppService.GetStatusAsync();
+    
+    var html = $@"
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>WhatsApp Status - AI Agent</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 40px; text-align: center; }}
+            .container {{ max-width: 600px; margin: 0 auto; }}
+            .connected {{ background: #d4edda; padding: 20px; border-radius: 10px; }}
+            .disconnected {{ background: #f8d7da; padding: 20px; border-radius: 10px; }}
+            .qr-available {{ background: #fff3cd; padding: 20px; border-radius: 10px; }}
+        </style>
+    </head>
+    <body>
+        <div class='container'>
+            <h1>🤖 AI Agent - WhatsApp Status</h1>
+            <div class='{GetStatusClass(status)}'>
+                <h2>{GetStatusTitle(status)}</h2>
+                <p>{GetStatusMessage(status)}</p>
+                <p><strong>API Usage:</strong> Use Swagger UI at <a href='/swagger'>/swagger</a> for full control</p>
+            </div>
+            <p><a href='/swagger'>Go to Swagger UI</a> | <a href='/api/whatsapp/status'>Raw Status JSON</a></p>
+        </div>
+    </body>
+    </html>";
+    
+    return Results.Content(html, "text/html");
+    
+    string GetStatusClass(WhatsAppStatus status) => status.Status.ToLower() switch
+    {
+        "connected" => "connected",
+        "qr_available" => "qr-available",
+        _ => "disconnected"
+    };
+    
+    string GetStatusTitle(WhatsAppStatus status) => status.Status.ToLower() switch
+    {
+        "connected" => "✅ WhatsApp Connected",
+        "qr_available" => "📱 QR Code Available",
+        _ => "❌ WhatsApp Disconnected"
+    };
+    
+    string GetStatusMessage(WhatsAppStatus status) => status.Status.ToLower() switch
+    {
+        "connected" => "Your AI Agent is connected to WhatsApp and ready to process messages.",
+        "qr_available" => "Scan the QR code using the API endpoints to connect WhatsApp.",
+        _ => "Initialize the connection using the WhatsApp API endpoints."
+    };
 });
 
 // Map controllers and hubs
 app.MapControllers();
 app.MapHub<UpdatesHub>("/hub");
 
-app.MapControllerRoute(
-    name: "webhooks",
-    pattern: "webhooks/{controller=Webhooks}/{action=Index}/{id?}");
-
-// Add .well-known endpoint for Chrome DevTools
-app.MapGet("/.well-known/appspecific/com.chrome.devtools.json", () =>
-{
-    return Results.Json(new
-    {
-        name = "AI Agent Backend",
-        version = "1.0.0",
-        description = "AI Agent Backend API",
-        environment = app.Environment.EnvironmentName
-    });
-});
-
-// API info endpoint
-app.MapGet("/api/info", () => Results.Json(new
-{
-    service = "AI Agent Backend",
-    version = "1.0.0",
-    status = "Running",
-    timestamp = DateTime.UtcNow,
-    environment = app.Environment.EnvironmentName,
-    endpoints = new
-    {
-        swagger = "/swagger",
-        hangfire = "/hangfire",
-        health = "/health"
-    }
-}));
-
-// Root endpoint
-app.MapGet("/", () => Results.Json(new
-{
-    service = "AI Agent Backend",
-    version = "1.0.0",
-    status = "Running",
-    timestamp = DateTime.UtcNow,
-    environment = app.Environment.EnvironmentName,
-    documentation = "Visit /swagger for API documentation"
-}));
-
 // Schedule background jobs
-using (var scope = app.Services.CreateScope())
+try
 {
-    var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
-    var reminderJob = scope.ServiceProvider.GetRequiredService<ReminderJob>();
-    var gmailJob = scope.ServiceProvider.GetRequiredService<GmailPollingJob>();
-
-    // Schedule jobs with proper error handling
-    try
+    using (var scope = app.Services.CreateScope())
     {
+        var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+        var reminderJob = scope.ServiceProvider.GetRequiredService<ReminderJob>();
+        var gmailJob = scope.ServiceProvider.GetRequiredService<GmailPollingJob>();
+        var whatsAppService = scope.ServiceProvider.GetRequiredService<IWhatsAppService>();
+
         recurringJobManager.AddOrUpdate(
             "task-reminders",
             () => reminderJob.RunAsync(),
@@ -390,66 +460,51 @@ using (var scope = app.Services.CreateScope())
         );
 
         recurringJobManager.AddOrUpdate(
-            "calendar-sync",
-            () => scope.ServiceProvider.GetService<IGoogleCalendarService>()!.SyncAllUserCalendars(),
-            "*/5 * * * *"
-        );
-
-        recurringJobManager.AddOrUpdate(
-            "trello-sync",
-            () => scope.ServiceProvider.GetService<ITrelloService>()!.SyncAllUserTasks(),
-            "*/5 * * * *"
+            "whatsapp-health",
+            () => whatsAppService.CheckConnectionStatusAsync(),
+            "*/2 * * * *"
         );
 
         recurringJobManager.AddOrUpdate(
             "proactive-reminders",
-            () => scope.ServiceProvider.GetService<IProactiveNotificationService>()!.CheckAndSendRemindersAsync(),
+            () => scope.ServiceProvider.GetRequiredService<IProactiveNotificationService>().CheckAndSendRemindersAsync(),
             Cron.Minutely
         );
 
         recurringJobManager.AddOrUpdate(
-            "proactive-event-reminders",
-            () => scope.ServiceProvider.GetService<IProactiveNotificationService>()!.CheckAndSendEventRemindersAsync(),
+            "event-reminders", 
+            () => scope.ServiceProvider.GetRequiredService<IProactiveNotificationService>().CheckAndSendEventRemindersAsync(),
             Cron.Minutely
         );
 
         recurringJobManager.AddOrUpdate(
-            "proactive-email-alerts",
-            () => scope.ServiceProvider.GetService<IProactiveNotificationService>()!.CheckAndSendEmailAlertsAsync(),
+            "email-alerts",
+            () => scope.ServiceProvider.GetRequiredService<IProactiveNotificationService>().CheckAndSendEmailAlertsAsync(),
             "*/5 * * * *"
         );
 
         recurringJobManager.AddOrUpdate(
-            "proactive-task-warnings",
-            () => scope.ServiceProvider.GetService<IProactiveNotificationService>()!.CheckAndSendTaskDeadlineWarningsAsync(),
-            "0 * * * *"
+            "deadline-warnings",
+            () => scope.ServiceProvider.GetRequiredService<IProactiveNotificationService>().CheckAndSendTaskDeadlineWarningsAsync(),
+            "0 */6 * * *"
         );
 
         Console.WriteLine("✅ Background jobs scheduled successfully");
     }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"❌ Failed to schedule background jobs: {ex.Message}");
-    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"❌ Failed to schedule background jobs: {ex.Message}");
 }
 
-// Global exception handler for the application
-AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
-{
-    Console.WriteLine($"🛑 CRITICAL: Unhandled exception: {e.ExceptionObject}");
-};
-
-TaskScheduler.UnobservedTaskException += (sender, e) =>
-{
-    Console.WriteLine($"🛑 CRITICAL: Unobserved task exception: {e.Exception}");
-    e.SetObserved();
-};
-
-Console.WriteLine($"🚀 AI Agent Backend starting in {app.Environment.EnvironmentName} environment...");
-Console.WriteLine($"🌐 Server URLs: {string.Join(", ", builder.Configuration["ASPNETCORE_URLS"]?.Split(';') ?? new[] { "http://+:5000" })}");
+// Update startup message (removed webhooks reference)
+Console.WriteLine($"🚀 AI Agent Backend starting on port 5000...");
+Console.WriteLine($"🌐 Server URL: http://localhost:5000");
 Console.WriteLine($"📚 Swagger UI: http://localhost:5000/swagger");
 Console.WriteLine($"📊 Hangfire Dashboard: http://localhost:5000/hangfire");
+Console.WriteLine($"📱 WhatsApp API: http://localhost:5000/api/whatsapp/*");
 Console.WriteLine($"❤️ Health Check: http://localhost:5000/health");
+Console.WriteLine($"⏰ Reminder: Make sure MySQL is running on localhost:3306");
 
 app.Run();
 
@@ -460,5 +515,34 @@ public class HangfireAuthorizationFilter : IDashboardAuthorizationFilter
     {
         var httpContext = context.GetHttpContext();
         return httpContext.User.Identity?.IsAuthenticated == true;
+    }
+}
+
+// WhatsApp Health Check Implementation (moved outside top-level statements)
+public class WhatsAppHealthCheck : IHealthCheck
+{
+    private readonly IServiceProvider _serviceProvider;
+
+    public WhatsAppHealthCheck(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+    }
+
+    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var whatsAppService = scope.ServiceProvider.GetRequiredService<IWhatsAppService>();
+            var status = await whatsAppService.GetStatusAsync();
+            
+            return status.IsConnected 
+                ? HealthCheckResult.Healthy("WhatsApp is connected")
+                : HealthCheckResult.Degraded("WhatsApp is disconnected");
+        }
+        catch (Exception ex)
+        {
+            return HealthCheckResult.Unhealthy("WhatsApp health check failed", ex);
+        }
     }
 }

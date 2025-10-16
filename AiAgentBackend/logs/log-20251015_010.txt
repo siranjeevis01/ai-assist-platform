@@ -1,0 +1,164 @@
+2025-10-15 16:10:31.824 +05:30 [INF] DB tables already exist. Exit install
+2025-10-15 16:10:33.089 +05:30 [WRN] Overriding address(es) 'http://localhost:5000'. Binding to endpoints defined via IConfiguration and/or UseKestrel() instead.
+2025-10-15 16:10:33.143 +05:30 [INF] Now listening on: http://[::]:5000
+2025-10-15 16:10:33.160 +05:30 [INF] Starting Hangfire Server using job storage: 'Server: 127.0.0.1@AiAgentDb'
+2025-10-15 16:10:33.189 +05:30 [INF] Using the following options for SQL Server job storage:
+2025-10-15 16:10:33.193 +05:30 [INF]     Queue poll interval: 00:00:30.
+2025-10-15 16:10:33.200 +05:30 [INF] Using the following options for Hangfire Server:
+    Worker count: 4
+    Listening queues: 'default', 'critical', 'low'
+    Shutdown timeout: 00:00:15
+    Schedule polling interval: 00:00:15
+2025-10-15 16:10:33.248 +05:30 [INF] Application started. Press Ctrl+C to shut down.
+2025-10-15 16:10:33.255 +05:30 [INF] Hosting environment: Development
+2025-10-15 16:10:33.258 +05:30 [INF] Content root path: D:\Siranjeevi\AIAssist\AiAgentBackend
+2025-10-15 16:10:33.270 +05:30 [INF] Server hp:6660:2cec4409 successfully announced in 17.0333 ms
+2025-10-15 16:10:33.282 +05:30 [INF] Server hp:6660:2cec4409 is starting the registered dispatchers: ServerWatchdog, ServerJobCancellationWatcher, ExpirationManager, CountersAggregator, Worker, DelayedJobScheduler, RecurringJobScheduler...
+2025-10-15 16:10:33.339 +05:30 [INF] Server hp:6660:2cec4409 all the dispatchers started
+2025-10-15 16:11:33.437 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 16:11:33.460 +05:30 [INF] Processing Gmail for 1 users
+2025-10-15 16:11:33.588 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-15 16:12:03.376 +05:30 [INF] User logged in: siranjeevi@neolysi.com
+2025-10-15 16:12:03.426 +05:30 [INF] HTTP POST /api/Auth/login responded 200 in 1837.1412 ms
+2025-10-15 16:13:03.795 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 16:13:04.347 +05:30 [INF] HTTP GET /api/google/status responded 200 in 104.1275 ms
+2025-10-15 16:13:20.962 +05:30 [INF] Initializing WhatsApp connection...
+2025-10-15 16:13:21.655 +05:30 [INF] Generated enhanced QR code with session: e563cf8b-d3df-48d5-964d-332d67ba3ba9
+2025-10-15 16:13:21.661 +05:30 [INF] QR code generated successfully. Available at /api/whatsapp/qr
+2025-10-15 16:13:21.667 +05:30 [INF] Monitoring WhatsApp connection process...
+2025-10-15 16:13:21.669 +05:30 [INF] HTTP POST /api/WhatsApp/connect responded 200 in 725.9079 ms
+2025-10-15 16:13:36.707 +05:30 [INF] Simulating QR code scan...
+2025-10-15 16:13:40.228 +05:30 [INF] HTTP GET /api/WhatsApp/qr responded 200 in 41.9160 ms
+2025-10-15 16:13:46.725 +05:30 [ERR] Failed to update connection status in database
+System.ObjectDisposedException: Cannot access a disposed object.
+Object name: 'IServiceProvider'.
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.ThrowHelper.ThrowObjectDisposedException()
+   at Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService(IServiceProvider provider, Type serviceType)
+   at Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService[T](IServiceProvider provider)
+   at Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.CreateScope(IServiceProvider provider)
+   at AiAgentBackend.Services.Integrations.WhatsAppService.UpdateConnectionStatusInDatabase(IServiceProvider serviceProvider, Boolean isConnected) in D:\Siranjeevi\AIAssist\AiAgentBackend\Services\Integrations\WhatsAppService.cs:line 343
+2025-10-15 16:13:46.761 +05:30 [ERR] Error in SendWelcomeMessages
+System.ObjectDisposedException: Cannot access a disposed object.
+Object name: 'IServiceProvider'.
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.ThrowHelper.ThrowObjectDisposedException()
+   at Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService(IServiceProvider provider, Type serviceType)
+   at Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService[T](IServiceProvider provider)
+   at Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.CreateScope(IServiceProvider provider)
+   at AiAgentBackend.Services.Integrations.WhatsAppService.SendWelcomeMessages(IServiceProvider serviceProvider) in D:\Siranjeevi\AIAssist\AiAgentBackend\Services\Integrations\WhatsAppService.cs:line 308
+2025-10-15 16:13:46.775 +05:30 [INF] WhatsApp connected successfully!
+2025-10-15 16:14:32.044 +05:30 [INF] HTTP GET /api/WhatsApp/status responded 200 in 28.2048 ms
+2025-10-15 16:14:41.690 +05:30 [INF] HTTP GET /api/WhatsApp/qr-display responded 200 in 12.4602 ms
+2025-10-15 16:15:05.435 +05:30 [INF] Processing Gmail for 1 users
+2025-10-15 16:15:05.443 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-15 16:15:05.513 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 16:17:34.548 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 16:19:34.671 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 16:21:04.767 +05:30 [INF] Processing Gmail for 1 users
+2025-10-15 16:21:04.776 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-15 16:21:04.801 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 16:23:04.922 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 16:25:05.008 +05:30 [INF] Processing Gmail for 1 users
+2025-10-15 16:25:05.017 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-15 16:25:05.062 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 16:28:06.009 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 16:30:35.502 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 16:30:35.455 +05:30 [INF] Processing Gmail for 1 users
+2025-10-15 16:30:35.526 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-15 16:32:06.250 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 16:33:35.943 +05:30 [INF] Server hp:6660:2cec4409 caught stopping signal...
+2025-10-15 16:33:35.951 +05:30 [INF] Application is shutting down...
+2025-10-15 16:33:35.959 +05:30 [INF] Server hp:6660:2cec4409 All dispatchers stopped
+2025-10-15 16:33:35.979 +05:30 [INF] Server hp:6660:2cec4409 successfully reported itself as stopped in 3.6266 ms
+2025-10-15 16:33:35.984 +05:30 [INF] Server hp:6660:2cec4409 has been stopped in total 32.8795 ms
+2025-10-15 16:46:18.330 +05:30 [INF] DB tables already exist. Exit install
+2025-10-15 16:46:20.555 +05:30 [WRN] Overriding address(es) 'http://localhost:5000'. Binding to endpoints defined via IConfiguration and/or UseKestrel() instead.
+2025-10-15 16:46:20.604 +05:30 [INF] Now listening on: http://[::]:5000
+2025-10-15 16:46:20.626 +05:30 [INF] Starting Hangfire Server using job storage: 'Server: 127.0.0.1@AiAgentDb'
+2025-10-15 16:46:20.630 +05:30 [INF] Using the following options for SQL Server job storage:
+2025-10-15 16:46:20.640 +05:30 [INF]     Queue poll interval: 00:00:30.
+2025-10-15 16:46:20.645 +05:30 [INF] Using the following options for Hangfire Server:
+    Worker count: 4
+    Listening queues: 'default', 'critical', 'low'
+    Shutdown timeout: 00:00:15
+    Schedule polling interval: 00:00:15
+2025-10-15 16:46:20.696 +05:30 [INF] Application started. Press Ctrl+C to shut down.
+2025-10-15 16:46:20.710 +05:30 [INF] Hosting environment: Development
+2025-10-15 16:46:20.715 +05:30 [INF] Content root path: D:\Siranjeevi\AIAssist\AiAgentBackend
+2025-10-15 16:46:20.716 +05:30 [INF] Server hp:4152:676d7795 successfully announced in 23.9728 ms
+2025-10-15 16:46:20.735 +05:30 [INF] Server hp:4152:676d7795 is starting the registered dispatchers: ServerWatchdog, ServerJobCancellationWatcher, ExpirationManager, CountersAggregator, Worker, DelayedJobScheduler, RecurringJobScheduler...
+2025-10-15 16:46:20.849 +05:30 [INF] Server hp:4152:676d7795 all the dispatchers started
+2025-10-15 16:46:22.557 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 16:46:22.756 +05:30 [INF] Processing Gmail for 1 users
+2025-10-15 16:46:23.034 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-15 16:47:08.386 +05:30 [INF] User logged in: siranjeevi@neolysi.com
+2025-10-15 16:47:08.469 +05:30 [INF] HTTP POST /api/Auth/login responded 200 in 5120.7070 ms
+2025-10-15 16:47:20.966 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 16:47:45.343 +05:30 [INF] Initializing WhatsApp connection...
+2025-10-15 16:47:46.549 +05:30 [INF] Generated enhanced QR code with session: a0bcb2a0-cd86-4a2a-aaa6-c37d15ddca50
+2025-10-15 16:47:46.553 +05:30 [INF] QR code generated successfully. Available at /api/whatsapp/qr
+2025-10-15 16:47:46.571 +05:30 [WRN] The query uses the 'First'/'FirstOrDefault' operator without 'OrderBy' and filter operators. This may lead to unpredictable results.
+2025-10-15 16:47:46.654 +05:30 [INF] WhatsApp connection status updated to: Disconnected
+2025-10-15 16:47:46.666 +05:30 [INF] Monitoring WhatsApp connection process...
+2025-10-15 16:47:46.672 +05:30 [INF] HTTP POST /api/WhatsApp/connect responded 200 in 1475.8834 ms
+2025-10-15 16:47:55.297 +05:30 [INF] HTTP GET /api/WhatsApp/status responded 200 in 96.3906 ms
+2025-10-15 16:48:01.722 +05:30 [INF] Simulating QR code scan...
+2025-10-15 16:48:07.879 +05:30 [INF] HTTP GET /api/WhatsApp/qr responded 200 in 17.4184 ms
+2025-10-15 16:48:11.753 +05:30 [ERR] Failed to update connection status in database
+System.ObjectDisposedException: Cannot access a disposed object.
+Object name: 'IServiceProvider'.
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.ThrowHelper.ThrowObjectDisposedException()
+   at Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService(IServiceProvider provider, Type serviceType)
+   at Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService[T](IServiceProvider provider)
+   at Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.CreateScope(IServiceProvider provider)
+   at AiAgentBackend.Services.Integrations.WhatsAppService.UpdateConnectionStatusInDatabase(Boolean isConnected) in D:\Siranjeevi\AIAssist\AiAgentBackend\Services\Integrations\WhatsAppService.cs:line 351
+2025-10-15 16:48:11.812 +05:30 [ERR] Error in SendWelcomeMessages
+System.ObjectDisposedException: Cannot access a disposed object.
+Object name: 'IServiceProvider'.
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.ThrowHelper.ThrowObjectDisposedException()
+   at Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService(IServiceProvider provider, Type serviceType)
+   at Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService[T](IServiceProvider provider)
+   at Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.CreateScope(IServiceProvider provider)
+   at AiAgentBackend.Services.Integrations.WhatsAppService.SendWelcomeMessages() in D:\Siranjeevi\AIAssist\AiAgentBackend\Services\Integrations\WhatsAppService.cs:line 317
+2025-10-15 16:48:11.836 +05:30 [INF] WhatsApp connected successfully!
+2025-10-15 16:48:14.571 +05:30 [INF] HTTP GET /api/WhatsApp/status responded 200 in 7.4972 ms
+2025-10-15 16:48:18.758 +05:30 [INF] HTTP GET /api/WhatsApp/qr-display responded 200 in 33.8793 ms
+2025-10-15 16:48:47.636 +05:30 [INF] HTTP GET /api/google/status responded 200 in 164.6453 ms
+2025-10-15 16:48:58.251 +05:30 [INF] Google disconnected for user 1
+2025-10-15 16:48:58.259 +05:30 [INF] HTTP DELETE /api/google/disconnect responded 200 in 401.6357 ms
+2025-10-15 16:49:04.404 +05:30 [INF] HTTP GET /api/google/status responded 200 in 12.2180 ms
+2025-10-15 16:49:10.968 +05:30 [INF] Google OAuth URL requested for user 1
+2025-10-15 16:49:10.974 +05:30 [INF] HTTP GET /api/google/connect-url responded 200 in 12.5542 ms
+2025-10-15 16:49:21.142 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 16:49:36.604 +05:30 [INF] Google connected successfully for user 1
+2025-10-15 16:49:36.640 +05:30 [INF] HTTP GET /api/google/callback responded 302 in 667.5283 ms
+2025-10-15 16:49:36.953 +05:30 [INF] HTTP GET /api/Tasks responded 401 in 18.8766 ms
+2025-10-15 16:49:36.953 +05:30 [INF] HTTP GET /api/Users/me responded 401 in 19.9699 ms
+2025-10-15 16:49:36.953 +05:30 [INF] HTTP GET /api/Events responded 401 in 2.1246 ms
+2025-10-15 16:49:47.525 +05:30 [INF] HTTP GET /api/google/status responded 200 in 6.0974 ms
+2025-10-15 16:50:09.204 +05:30 [INF] HTTP GET /whatsapp-qr responded 200 in 10.2374 ms
+2025-10-15 16:50:20.465 +05:30 [INF] HTTP GET /.well-known/appspecific/com.chrome.devtools.json responded 200 in 6.5937 ms
+2025-10-15 16:50:25.816 +05:30 [INF] HTTP GET /api/info responded 200 in 7.9997 ms
+2025-10-15 16:50:31.246 +05:30 [INF] HTTP GET / responded 200 in 6.4749 ms
+2025-10-15 16:50:40.406 +05:30 [INF] HTTP GET /api/WhatsApp/status responded 200 in 7.9880 ms
+2025-10-15 16:51:21.262 +05:30 [INF] Processing Gmail for 1 users
+2025-10-15 16:51:21.275 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-15 16:51:21.293 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 16:52:20.617 +05:30 [INF] HTTP POST /api/Messages/send responded 401 in 1.1207 ms
+2025-10-15 16:53:21.997 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 16:55:22.159 +05:30 [INF] Processing Gmail for 1 users
+2025-10-15 16:55:22.177 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-15 16:55:22.238 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 16:58:23.336 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 17:00:23.659 +05:30 [INF] Processing Gmail for 1 users
+2025-10-15 17:00:23.672 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-15 17:00:23.764 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 17:02:24.406 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 17:04:24.599 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 17:06:25.771 +05:30 [INF] Processing Gmail for 1 users
+2025-10-15 17:06:25.811 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-15 17:06:25.916 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 17:06:56.971 +05:30 [INF] Server hp:4152:676d7795 caught stopping signal...
+2025-10-15 17:06:57.001 +05:30 [INF] Application is shutting down...
+2025-10-15 17:06:57.007 +05:30 [INF] Server hp:4152:676d7795 All dispatchers stopped
+2025-10-15 17:06:57.024 +05:30 [INF] Server hp:4152:676d7795 successfully reported itself as stopped in 4.2809 ms
+2025-10-15 17:06:57.031 +05:30 [INF] Server hp:4152:676d7795 has been stopped in total 30.4198 ms

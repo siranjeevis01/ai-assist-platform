@@ -1,3 +1,4 @@
+// Controllers/AuthController.cs
 using Microsoft.AspNetCore.Authorization;
 using AiAgentBackend.Data;
 using AiAgentBackend.DTOs.Auth;
@@ -16,14 +17,20 @@ namespace AiAgentBackend.Controllers
     {
         private readonly ApplicationDbContext _db;
         private readonly IJwtTokenService _jwt;
+        private readonly IPasswordService _passwordService;
         private readonly IEmailService _emailService;
         private readonly ILogger<AuthController> _logger;
 
-        public AuthController(ApplicationDbContext db, IJwtTokenService jwt, 
-                            IEmailService emailService, ILogger<AuthController> logger)
+        public AuthController(
+            ApplicationDbContext db, 
+            IJwtTokenService jwt,
+            IPasswordService passwordService,
+            IEmailService emailService, 
+            ILogger<AuthController> logger)
         {
             _db = db;
             _jwt = jwt;
+            _passwordService = passwordService;
             _emailService = emailService;
             _logger = logger;
         }
@@ -33,6 +40,16 @@ namespace AiAgentBackend.Controllers
         {
             try
             {
+                // Validate password
+                var passwordValidation = _passwordService.ValidatePassword(req.Password);
+                if (!passwordValidation.IsValid)
+                {
+                    return BadRequest(new { 
+                        error = "Password validation failed", 
+                        details = passwordValidation.Errors 
+                    });
+                }
+
                 if (await _db.Users.AnyAsync(u => u.Email == req.Email))
                     return Conflict(new { error = "Email already registered" });
 
@@ -40,7 +57,7 @@ namespace AiAgentBackend.Controllers
                 {
                     Email = req.Email,
                     Name = req.Name,
-                    PasswordHash = _jwt.HashPassword(req.Password),
+                    PasswordHash = _passwordService.HashPassword(req.Password),
                     CreatedAt = DateTime.UtcNow,
                     Timezone = "UTC",
                     Role = "User"
@@ -109,7 +126,7 @@ namespace AiAgentBackend.Controllers
                     .Include(u => u.Preference)
                     .FirstOrDefaultAsync(u => u.Email == req.Email);
                     
-                if (user == null || !_jwt.VerifyPassword(req.Password, user.PasswordHash))
+                if (user == null || !_passwordService.VerifyPassword(req.Password, user.PasswordHash))
                 {
                     _logger.LogWarning("Failed login attempt for email: {Email}", req.Email);
                     return Unauthorized(new { error = "Invalid credentials" });
@@ -169,7 +186,7 @@ namespace AiAgentBackend.Controllers
                 if (tokenEntry == null) 
                     return Unauthorized(new { error = "Invalid or expired refresh token" });
 
-                var newJwt = _jwt.CreateToken(tokenEntry.User);
+                var newJwt = _jwt.CreateToken(tokenEntry.User!);
                 
                 // Log the token refresh
                 _db.AuditLogs.Add(new AuditLog
@@ -244,7 +261,7 @@ namespace AiAgentBackend.Controllers
                 if (user == null) 
                     return BadRequest(new { error = "Invalid or expired token" });
 
-                user.PasswordHash = _jwt.HashPassword(req.NewPassword);
+                user.PasswordHash = _passwordService.HashPassword(req.NewPassword);
                 user.PasswordResetToken = null;
                 user.PasswordResetExpiry = null;
                 

@@ -5,6 +5,6 @@ namespace AiAgentBackend.Configuration
     {
         public string ClientId { get; set; } = string.Empty;
         public string ClientSecret { get; set; } = string.Empty;
-        public string RedirectUri { get; set; } = string.Empty;
+        public string RedirectUri { get; set; } = "http://localhost:5000/api/google/callback";
     }
 }

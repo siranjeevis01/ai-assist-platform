@@ -1,3 +1,4 @@
+// Services/Auth/JwtTokenService.cs
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -5,10 +6,15 @@ using AiAgentBackend.Configuration;
 using AiAgentBackend.Models;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using System.Security.Cryptography;
 
 namespace AiAgentBackend.Services.Auth
 {
+    public interface IJwtTokenService
+    {
+        string CreateToken(User user);
+        ClaimsPrincipal? ValidateToken(string token);
+    }
+        
     public class JwtTokenService : IJwtTokenService
     {
         private readonly JwtOptions _opts;
@@ -52,18 +58,6 @@ namespace AiAgentBackend.Services.Auth
                 _logger.LogError(ex, "Error creating JWT token");
                 throw;
             }
-        }
-
-        public string HashPassword(string password)
-        {
-            using var sha = SHA256.Create();
-            var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(password));
-            return Convert.ToBase64String(bytes);
-        }
-
-        public bool VerifyPassword(string password, string hash)
-        {
-            return HashPassword(password) == hash;
         }
 
         public ClaimsPrincipal? ValidateToken(string token)

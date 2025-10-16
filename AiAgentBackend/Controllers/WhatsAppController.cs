@@ -1,7 +1,7 @@
 using AiAgentBackend.Services.Integrations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+using System.Text.Json;
 
 namespace AiAgentBackend.Controllers
 {
@@ -10,147 +10,375 @@ namespace AiAgentBackend.Controllers
     [Authorize]
     public class WhatsAppController : ControllerBase
     {
-        private readonly IHttpWhatsAppService _whatsAppService;
+        private readonly IWhatsAppService _whatsAppService;
         private readonly ILogger<WhatsAppController> _logger;
+        private static readonly Dictionary<string, DateTime> _qrCache = new();
 
-        public WhatsAppController(IHttpWhatsAppService whatsAppService, ILogger<WhatsAppController> logger)
+        public WhatsAppController(IWhatsAppService whatsAppService, ILogger<WhatsAppController> logger)
         {
             _whatsAppService = whatsAppService;
             _logger = logger;
         }
 
-        private int GetUserId()
-        {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            return int.TryParse(userIdStr, out var userId) ? userId : 0;
-        }
-
         [HttpGet("qr")]
+        [Produces("application/json")]
         public async Task<IActionResult> GetQrCode()
         {
             try
             {
-                var userId = GetUserId();
-                if (userId == 0) return Unauthorized();
-
-                var qrCode = await _whatsAppService.GetQrCodeAsync(userId);
-                if (string.IsNullOrEmpty(qrCode))
+                var qr = await _whatsAppService.GetQrCodeAsync();
+                
+                // Enhanced response for Swagger
+                var enhancedResponse = new
                 {
-                    return Ok(new { message = "No QR code available. Bot may be connected or starting up." });
-                }
-
-                return Ok(new { qrCode = $"data:image/png;base64,{qrCode}" });
+                    qrCode = qr.QrCode,
+                    qrImage = qr.QrImage,
+                    message = qr.Message,
+                    status = qr.Status,
+                    expiresAt = qr.ExpiresAt,
+                    instructions = "Scan this QR code with your WhatsApp mobile app",
+                    nextSteps = new[] 
+                    {
+                        "Open WhatsApp on your phone",
+                        "Tap Menu → Linked Devices → Link a Device",
+                        "Point your phone at this QR code"
+                    },
+                    connectionStatus = await _whatsAppService.GetStatusAsync()
+                };
+                
+                return Ok(enhancedResponse);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error generating QR code");
-                return StatusCode(500, new { error = "Failed to generate QR code" });
+                _logger.LogError(ex, "Error getting QR code");
+                return StatusCode(500, new { 
+                    error = ex.Message,
+                    details = "Failed to retrieve QR code"
+                });
             }
         }
 
         [HttpPost("connect")]
+        [Produces("application/json")]
         public async Task<IActionResult> Connect()
         {
             try
             {
-                var userId = GetUserId();
-                if (userId == 0) return Unauthorized();
-
-                var success = await _whatsAppService.InitializeConnectionAsync(userId);
-                return Ok(new { success, message = "Connection initialized" });
+                _logger.LogInformation("WhatsApp connection initiated via API");
+                
+                var result = await _whatsAppService.InitializeConnectionAsync();
+                
+                if (result.Success)
+                {
+                    var response = new
+                    {
+                        success = true,
+                        message = result.Message,
+                        qrCode = result.QrCode,
+                        nextStep = result.NextStep,
+                        connectionId = Guid.NewGuid().ToString(),
+                        timestamp = DateTime.UtcNow,
+                        status = await _whatsAppService.GetStatusAsync(),
+                        monitoringUrl = "/api/whatsapp/status", // For polling status
+                        qrUrl = "/api/whatsapp/qr" // For getting QR code
+                    };
+                    
+                    return Ok(response);
+                }
+                else
+                {
+                    return StatusCode(500, new 
+                    { 
+                        success = false, 
+                        error = result.Error,
+                        message = result.Message,
+                        timestamp = DateTime.UtcNow
+                    });
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error initializing WhatsApp connection");
-                return StatusCode(500, new { error = "Failed to initialize connection" });
+                _logger.LogError(ex, "Error connecting WhatsApp");
+                return StatusCode(500, new { 
+                    error = ex.Message,
+                    details = "Connection failed. Please try again."
+                });
             }
         }
 
         [HttpGet("status")]
+        [Produces("application/json")]
         public async Task<IActionResult> GetStatus()
         {
             try
             {
-                var userId = GetUserId();
-                if (userId == 0) return Unauthorized();
-
-                var status = await _whatsAppService.GetStatusAsync(userId);
-                return Ok(status);
+                var status = await _whatsAppService.GetStatusAsync();
+                
+                // Enhanced status response
+                var enhancedStatus = new
+                {
+                    isConnected = status.IsConnected,
+                    status = status.Status,
+                    qrAvailable = status.QrAvailable,
+                    timestamp = status.Timestamp,
+                    isInitializing = status.IsInitializing,
+                    qrGeneratedAt = status.QrGeneratedAt,
+                    userFriendlyStatus = GetUserFriendlyStatus(status),
+                    actions = GetAvailableActions(status),
+                    lastUpdated = DateTime.UtcNow
+                };
+                
+                return Ok(enhancedStatus);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error checking WhatsApp status");
-                return StatusCode(500, new { error = "Failed to check status" });
+                _logger.LogError(ex, "Error getting status");
+                return StatusCode(500, new { 
+                    error = ex.Message,
+                    details = "Failed to retrieve status"
+                });
             }
         }
 
         [HttpPost("send")]
+        [Produces("application/json")]
         public async Task<IActionResult> SendMessage([FromBody] WhatsAppSendMessageRequest request)
         {
             try
             {
-                var userId = GetUserId();
-                if (userId == 0) return Unauthorized();
-
                 if (string.IsNullOrEmpty(request.Text))
-                    return BadRequest(new { error = "Message is required" });
+                    return BadRequest(new { 
+                        error = "Message text is required",
+                        field = "text"
+                    });
 
-                var success = await _whatsAppService.SendMessageAsync(userId, request.Text);
-                
-                return Ok(new 
-                { 
-                    success,
-                    message = success ? "Message sent" : "Failed to send message"
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error sending WhatsApp message");
-                return StatusCode(500, new { error = "Failed to send message" });
-            }
-        }
+                if (string.IsNullOrEmpty(request.To))
+                    return BadRequest(new { 
+                        error = "Recipient phone number is required",
+                        field = "to",
+                        format = "Include country code (e.g., +1234567890)"
+                    });
 
-        [HttpGet("test")]
-        public async Task<IActionResult> TestConnection()
-        {
-            try
-            {
-                var userId = GetUserId();
-                if (userId == 0) return Unauthorized();
-
-                var isConnected = await _whatsAppService.CheckConnectionStatusAsync(userId);
-                
-                if (isConnected)
+                // Validate WhatsApp connection first
+                var status = await _whatsAppService.GetStatusAsync();
+                if (!status.IsConnected)
                 {
-                    var success = await _whatsAppService.SendMessageAsync(userId, 
-                        "🔗 Connection test successful! Your WhatsApp is properly connected to AI Agent.");
-                    
+                    return BadRequest(new
+                    {
+                        error = "WhatsApp is not connected",
+                        solution = "Please initialize connection first using POST /api/whatsapp/connect",
+                        currentStatus = status.Status
+                    });
+                }
+
+                var result = await _whatsAppService.SendMessageAsync(request.To, request.Text);
+                
+                if (result.Success)
+                {
                     return Ok(new 
                     { 
-                        success,
-                        message = "Test message sent successfully"
+                        success = true,
+                        message = "Message sent successfully",
+                        messageId = result.MessageId,
+                        recipient = request.To,
+                        timestamp = DateTime.UtcNow,
+                        text = request.Text
                     });
                 }
                 else
                 {
-                    return BadRequest(new 
+                    return StatusCode(500, new 
                     { 
-                        connected = false,
-                        message = "WhatsApp not connected. Please scan the QR code first."
+                        success = false,
+                        error = result.Error,
+                        message = result.Message,
+                        recipient = request.To,
+                        timestamp = DateTime.UtcNow
                     });
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error testing WhatsApp connection");
-                return StatusCode(500, new { error = "Failed to test connection" });
+                _logger.LogError(ex, "Error sending message to {To}", request.To);
+                return StatusCode(500, new { 
+                    error = ex.Message,
+                    details = $"Failed to send message to {request.To}",
+                    recipient = request.To
+                });
             }
+        }
+
+        [HttpPost("send-to-user/{userId}")]
+        [Produces("application/json")]
+        public async Task<IActionResult> SendMessageToUser(int userId, [FromBody] WhatsAppSendToUserRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(request.Text))
+                    return BadRequest(new { error = "Message text is required" });
+
+                // Validate WhatsApp connection first
+                var status = await _whatsAppService.GetStatusAsync();
+                if (!status.IsConnected)
+                {
+                    return BadRequest(new
+                    {
+                        error = "WhatsApp is not connected",
+                        solution = "Please initialize connection first using POST /api/whatsapp/connect"
+                    });
+                }
+
+                var result = await _whatsAppService.SendMessageAsync(userId, request.Text);
+                
+                if (result.Success)
+                {
+                    return Ok(new 
+                    { 
+                        success = true,
+                        message = "Message sent successfully to user",
+                        messageId = result.MessageId,
+                        userId = userId,
+                        timestamp = DateTime.UtcNow
+                    });
+                }
+                else
+                {
+                    return StatusCode(500, new 
+                    { 
+                        success = false,
+                        error = result.Error,
+                        message = result.Message,
+                        userId = userId,
+                        timestamp = DateTime.UtcNow
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending message to user {UserId}", userId);
+                return StatusCode(500, new { 
+                    error = ex.Message,
+                    details = $"Failed to send message to user {userId}"
+                });
+            }
+        }
+
+        [HttpPost("disconnect")]
+        [Produces("application/json")]
+        public async Task<IActionResult> Disconnect()
+        {
+            try
+            {
+                await _whatsAppService.DisconnectAsync();
+                
+                return Ok(new
+                {
+                    success = true,
+                    message = "WhatsApp disconnected successfully",
+                    timestamp = DateTime.UtcNow,
+                    status = "disconnected"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error disconnecting WhatsApp");
+                return StatusCode(500, new { 
+                    error = ex.Message,
+                    details = "Failed to disconnect WhatsApp"
+                });
+            }
+        }
+
+        [HttpGet("test-connection")]
+        [Produces("application/json")]
+        public async Task<IActionResult> TestConnection()
+        {
+            try
+            {
+                var status = await _whatsAppService.GetStatusAsync();
+                var isConnected = await _whatsAppService.CheckConnectionStatusAsync();
+                
+                return Ok(new
+                {
+                    success = true,
+                    status = status,
+                    isConnected = isConnected,
+                    health = isConnected ? "healthy" : "unhealthy",
+                    timestamp = DateTime.UtcNow,
+                    details = new
+                    {
+                        canSendMessages = isConnected,
+                        qrAvailable = status.QrAvailable,
+                        initializing = status.IsInitializing
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error testing WhatsApp connection");
+                return StatusCode(500, new { 
+                    error = ex.Message,
+                    health = "unhealthy",
+                    timestamp = DateTime.UtcNow
+                });
+            }
+        }
+
+        // Helper methods
+        private string GetUserFriendlyStatus(WhatsAppStatus status)
+        {
+            return status.Status.ToLower() switch
+            {
+                "connected" => "✅ Connected to WhatsApp",
+                "connecting" => "🔄 Connecting to WhatsApp...",
+                "initializing" => "⚡ Initializing WhatsApp Web...",
+                "disconnected" => "❌ Disconnected from WhatsApp",
+                "qr_available" => "📱 QR Code Available - Scan to Connect",
+                _ => "❓ Unknown Status"
+            };
+        }
+
+        private string[] GetAvailableActions(WhatsAppStatus status)
+        {
+            var actions = new List<string>();
+            
+            if (status.Status == "disconnected")
+            {
+                actions.Add("POST /api/whatsapp/connect - Initialize connection");
+            }
+            
+            if (status.QrAvailable)
+            {
+                actions.Add("GET /api/whatsapp/qr - Get QR code");
+            }
+            
+            if (status.IsConnected)
+            {
+                actions.Add("POST /api/whatsapp/send - Send message");
+                actions.Add("POST /api/whatsapp/disconnect - Disconnect");
+            }
+            
+            actions.Add("GET /api/whatsapp/status - Check status");
+            actions.Add("GET /api/whatsapp/test-connection - Test connection");
+            
+            return actions.ToArray();
         }
     }
 
-    // Renamed to avoid conflict
     public class WhatsAppSendMessageRequest
     {
+        public string To { get; set; } = string.Empty;
         public string Text { get; set; } = string.Empty;
+        
+        [System.Text.Json.Serialization.JsonExtensionData]
+        public Dictionary<string, object>? ExtensionData { get; set; }
+    }
+
+    public class WhatsAppSendToUserRequest
+    {
+        public string Text { get; set; } = string.Empty;
+        
+        [System.Text.Json.Serialization.JsonExtensionData]
+        public Dictionary<string, object>? ExtensionData { get; set; }
     }
 }

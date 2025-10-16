@@ -8,28 +8,26 @@ namespace AiAgentBackend.Jobs
 {
     public class GmailPollingJob
     {
-        private readonly ApplicationDbContext _db;
-        private readonly IEnhancedGmailService _gmail;
-        private readonly IHttpWhatsAppService _wa; 
         private readonly ILogger<GmailPollingJob> _logger;
+        private readonly IServiceProvider _serviceProvider;
 
         public GmailPollingJob(
-            ApplicationDbContext db, 
-            IEnhancedGmailService gmail, 
             ILogger<GmailPollingJob> logger,
-            IHttpWhatsAppService wa)
+            IServiceProvider serviceProvider)
         {
-            _db = db; 
-            _gmail = gmail; 
-            _wa = wa; 
             _logger = logger;
+            _serviceProvider = serviceProvider;
         }
 
         public async Task RunAsync()
         {
             try
             {
-                var usersWithGoogle = await _db.ProviderTokens
+                using var scope = _serviceProvider.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var gmail = scope.ServiceProvider.GetRequiredService<IGmailService>();
+
+                var usersWithGoogle = await db.ProviderTokens
                     .Where(t => t.Provider == "Google")
                     .Select(t => t.UserId)
                     .Distinct()
@@ -41,14 +39,14 @@ namespace AiAgentBackend.Jobs
                 {
                     try
                     {
-                        var user = await _db.Users.FindAsync(userId);
+                        var user = await db.Users.FindAsync(userId);
                         if (user == null || string.IsNullOrEmpty(user.PhoneNumber))
                         {
                             _logger.LogWarning("User {UserId} has no phone number, skipping Gmail processing", userId);
                             continue;
                         }
 
-                        var insights = await _gmail.GetInsightsAsync(userId, DateTime.UtcNow.AddHours(-6));
+                        var insights = await gmail.GetInsightsAsync(userId, DateTime.UtcNow.AddHours(-6));
                         
                         _logger.LogInformation("Found {Count} email insights for user {UserId}", insights.Count, userId);
                         
@@ -67,33 +65,35 @@ namespace AiAgentBackend.Jobs
                                     CreatedAt = DateTime.UtcNow
                                 };
                                 
-                                _db.Tasks.Add(task);
-                                await _db.SaveChangesAsync();
+                                db.Tasks.Add(task);
+                                await db.SaveChangesAsync();
 
-                                var success = await _wa.SendMessageAsync( 
+                                // Get WhatsApp service from the same scope
+                                var wa = scope.ServiceProvider.GetRequiredService<IWhatsAppService>();
+                                
+                                var result = await wa.SendMessageAsync( 
                                     userId, 
                                     $"Urgent email detected: '{subject}' from {from}. I created a task for you."
                                 );
                                 
-                                if (success)
+                                if (result.Success)
                                 {
                                     _logger.LogInformation("Notified user {UserId} about urgent email", userId);
                                 }
 
                                 // Create a draft reply
-                                await _gmail.DraftReplyAsync(userId, emailId, "acknowledge");
+                                await gmail.DraftReplyAsync(userId, emailId, "acknowledge");
                             }
                         }
 
                         // Process all incoming emails
-                        await _gmail.ProcessIncomingEmails(userId);
+                        await gmail.ProcessIncomingEmails(userId);
                     }
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, "GmailPollingJob failed for user {UserId}", userId);
                     }
                     
-                    // Small delay to avoid rate limiting
                     await Task.Delay(1000);
                 }
             }

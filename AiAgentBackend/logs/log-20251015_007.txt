@@ -1,0 +1,127 @@
+2025-10-15 15:14:46.722 +05:30 [INF] DB tables already exist. Exit install
+2025-10-15 15:14:48.054 +05:30 [WRN] Overriding address(es) 'http://localhost:5000'. Binding to endpoints defined via IConfiguration and/or UseKestrel() instead.
+2025-10-15 15:14:48.088 +05:30 [INF] Now listening on: http://[::]:5000
+2025-10-15 15:14:48.118 +05:30 [INF] Starting Hangfire Server using job storage: 'Server: 127.0.0.1@AiAgentDb'
+2025-10-15 15:14:48.131 +05:30 [INF] Using the following options for SQL Server job storage:
+2025-10-15 15:14:48.136 +05:30 [INF]     Queue poll interval: 00:00:30.
+2025-10-15 15:14:48.148 +05:30 [INF] Using the following options for Hangfire Server:
+    Worker count: 4
+    Listening queues: 'default', 'critical', 'low'
+    Shutdown timeout: 00:00:15
+    Schedule polling interval: 00:00:15
+2025-10-15 15:14:48.219 +05:30 [INF] Application started. Press Ctrl+C to shut down.
+2025-10-15 15:14:48.249 +05:30 [INF] Server hp:9804:92433c4b successfully announced in 21.7456 ms
+2025-10-15 15:14:48.244 +05:30 [INF] Hosting environment: Development
+2025-10-15 15:14:48.254 +05:30 [INF] Content root path: D:\Siranjeevi\AIAssist\AiAgentBackend
+2025-10-15 15:14:48.258 +05:30 [INF] Server hp:9804:92433c4b is starting the registered dispatchers: ServerWatchdog, ServerJobCancellationWatcher, ExpirationManager, CountersAggregator, Worker, DelayedJobScheduler, RecurringJobScheduler...
+2025-10-15 15:14:48.346 +05:30 [INF] Server hp:9804:92433c4b all the dispatchers started
+2025-10-15 15:15:18.727 +05:30 [INF] Processing Gmail for 1 users
+2025-10-15 15:15:18.727 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 15:15:18.792 +05:30 [INF] Processing Gmail for 1 users
+2025-10-15 15:15:18.829 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 15:15:18.909 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-15 15:15:18.909 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-15 15:15:30.679 +05:30 [INF] User logged in: siranjeevi@neolysi.com
+2025-10-15 15:15:30.730 +05:30 [INF] HTTP POST /api/Auth/login responded 200 in 1897.6278 ms
+2025-10-15 15:16:07.356 +05:30 [INF] HTTP GET /api/google/status responded 200 in 101.9263 ms
+2025-10-15 15:16:16.359 +05:30 [INF] HTTP GET /api/Users/me responded 200 in 75.3956 ms
+2025-10-15 15:16:26.769 +05:30 [INF] HTTP GET /api/WhatsApp/status responded 200 in 44.2579 ms
+2025-10-15 15:16:34.214 +05:30 [INF] Initializing WhatsApp connection...
+2025-10-15 15:16:34.813 +05:30 [INF] Generated QR code with session: b80daa91-6087-49b9-b64a-8688d3568876
+2025-10-15 15:16:34.819 +05:30 [INF] QR code generated successfully. Available at /api/whatsapp/qr
+2025-10-15 15:16:34.827 +05:30 [INF] Monitoring WhatsApp connection process...
+2025-10-15 15:16:34.828 +05:30 [INF] HTTP POST /api/WhatsApp/connect responded 200 in 624.6695 ms
+2025-10-15 15:16:48.309 +05:30 [INF] HTTP GET /api/WhatsApp/qr responded 200 in 14.9883 ms
+2025-10-15 15:16:56.511 +05:30 [INF] HTTP GET /api/WhatsApp/qr-display responded 200 in 12.1890 ms
+2025-10-15 15:17:19.031 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 15:17:21.241 +05:30 [INF] HTTP GET /api/WhatsApp/test responded 200 in 15.5497 ms
+2025-10-15 15:19:49.173 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 15:21:19.266 +05:30 [INF] Processing Gmail for 1 users
+2025-10-15 15:21:19.276 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-15 15:21:19.298 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 15:24:19.656 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 15:26:19.763 +05:30 [INF] Processing Gmail for 1 users
+2025-10-15 15:26:19.769 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-15 15:26:19.807 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 15:26:35.475 +05:30 [WRN] WhatsApp connection timed out
+2025-10-15 15:26:35.487 +05:30 [WRN] The query uses the 'First'/'FirstOrDefault' operator without 'OrderBy' and filter operators. This may lead to unpredictable results.
+2025-10-15 15:26:35.531 +05:30 [INF] WhatsApp connection status updated to: Disconnected
+2025-10-15 15:28:19.937 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 15:28:41.916 +05:30 [INF] Server hp:9804:92433c4b caught stopping signal...
+2025-10-15 15:28:41.921 +05:30 [INF] Application is shutting down...
+2025-10-15 15:28:41.923 +05:30 [INF] Server hp:9804:92433c4b All dispatchers stopped
+2025-10-15 15:28:41.941 +05:30 [INF] Server hp:9804:92433c4b successfully reported itself as stopped in 4.2771 ms
+2025-10-15 15:28:41.946 +05:30 [INF] Server hp:9804:92433c4b has been stopped in total 25.1173 ms
+2025-10-15 15:40:08.868 +05:30 [INF] DB tables already exist. Exit install
+2025-10-15 15:40:10.120 +05:30 [WRN] Overriding address(es) 'http://localhost:5000'. Binding to endpoints defined via IConfiguration and/or UseKestrel() instead.
+2025-10-15 15:40:10.156 +05:30 [INF] Now listening on: http://[::]:5000
+2025-10-15 15:40:10.196 +05:30 [INF] Starting Hangfire Server using job storage: 'Server: 127.0.0.1@AiAgentDb'
+2025-10-15 15:40:10.234 +05:30 [INF] Using the following options for SQL Server job storage:
+2025-10-15 15:40:10.238 +05:30 [INF]     Queue poll interval: 00:00:30.
+2025-10-15 15:40:10.243 +05:30 [INF] Using the following options for Hangfire Server:
+    Worker count: 4
+    Listening queues: 'default', 'critical', 'low'
+    Shutdown timeout: 00:00:15
+    Schedule polling interval: 00:00:15
+2025-10-15 15:40:10.293 +05:30 [INF] Application started. Press Ctrl+C to shut down.
+2025-10-15 15:40:10.307 +05:30 [INF] Hosting environment: Development
+2025-10-15 15:40:10.318 +05:30 [INF] Server hp:9784:675595c3 successfully announced in 17.6323 ms
+2025-10-15 15:40:10.320 +05:30 [INF] Content root path: D:\Siranjeevi\AIAssist\AiAgentBackend
+2025-10-15 15:40:10.330 +05:30 [INF] Server hp:9784:675595c3 is starting the registered dispatchers: ServerWatchdog, ServerJobCancellationWatcher, ExpirationManager, CountersAggregator, Worker, DelayedJobScheduler, RecurringJobScheduler...
+2025-10-15 15:40:10.462 +05:30 [INF] Server hp:9784:675595c3 all the dispatchers started
+2025-10-15 15:40:40.904 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 15:40:40.904 +05:30 [INF] Processing Gmail for 1 users
+2025-10-15 15:40:41.094 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-15 15:40:51.418 +05:30 [INF] User logged in: siranjeevi@neolysi.com
+2025-10-15 15:40:51.493 +05:30 [INF] HTTP POST /api/Auth/login responded 200 in 2949.0231 ms
+2025-10-15 15:41:21.544 +05:30 [INF] HTTP GET /api/google/status responded 200 in 84.3761 ms
+2025-10-15 15:41:35.737 +05:30 [INF] HTTP GET /api/WhatsApp/status responded 200 in 49.1505 ms
+2025-10-15 15:41:40.993 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 15:41:41.473 +05:30 [INF] Initializing WhatsApp connection...
+2025-10-15 15:41:42.109 +05:30 [INF] Generated enhanced QR code with session: 8515f906-5737-472f-a19f-6bb84c5fece7
+2025-10-15 15:41:42.115 +05:30 [INF] QR code generated successfully. Available at /api/whatsapp/qr
+2025-10-15 15:41:42.123 +05:30 [INF] Monitoring WhatsApp connection process...
+2025-10-15 15:41:42.129 +05:30 [INF] HTTP POST /api/WhatsApp/connect responded 200 in 673.4650 ms
+2025-10-15 15:41:55.436 +05:30 [INF] HTTP GET /api/WhatsApp/qr responded 200 in 11.2458 ms
+2025-10-15 15:41:57.129 +05:30 [INF] Simulating QR code scan...
+2025-10-15 15:42:01.941 +05:30 [INF] HTTP GET /api/WhatsApp/qr-display responded 200 in 10.8957 ms
+2025-10-15 15:42:07.150 +05:30 [ERR] Failed to update connection status in database
+System.ObjectDisposedException: Cannot access a disposed context instance. A common cause of this error is disposing a context instance that was resolved from dependency injection and then later trying to use the same context instance elsewhere in your application. This may occur if you are calling 'Dispose' on the context instance, or wrapping it in a using statement. If you are using dependency injection, you should let the dependency injection container take care of disposing context instances.
+Object name: 'ApplicationDbContext'.
+   at Microsoft.EntityFrameworkCore.DbContext.get_ContextServices()
+   at Microsoft.EntityFrameworkCore.DbContext.get_Model()
+   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.get_EntityType()
+   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.CheckState()
+   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.get_EntityQueryable()
+   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.System.Linq.IQueryable.get_Provider()
+   at Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ExecuteAsync[TSource,TResult](MethodInfo operatorMethodInfo, IQueryable`1 source, Expression expression, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ExecuteAsync[TSource,TResult](MethodInfo operatorMethodInfo, IQueryable`1 source, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync[TSource](IQueryable`1 source, CancellationToken cancellationToken)
+   at AiAgentBackend.Services.Integrations.WhatsAppService.UpdateConnectionStatusInDatabase(Boolean isConnected) in D:\Siranjeevi\AIAssist\AiAgentBackend\Services\Integrations\WhatsAppService.cs:line 336
+2025-10-15 15:42:07.206 +05:30 [ERR] Error in SendWelcomeMessages
+System.ObjectDisposedException: Cannot access a disposed context instance. A common cause of this error is disposing a context instance that was resolved from dependency injection and then later trying to use the same context instance elsewhere in your application. This may occur if you are calling 'Dispose' on the context instance, or wrapping it in a using statement. If you are using dependency injection, you should let the dependency injection container take care of disposing context instances.
+Object name: 'ApplicationDbContext'.
+   at Microsoft.EntityFrameworkCore.DbContext.CheckDisposed()
+   at Microsoft.EntityFrameworkCore.DbContext.get_DbContextDependencies()
+   at Microsoft.EntityFrameworkCore.DbContext.Set[TEntity]()
+   at AiAgentBackend.Data.ApplicationDbContext.get_Users() in D:\Siranjeevi\AIAssist\AiAgentBackend\Data\ApplicationDbContext.cs:line 10
+   at AiAgentBackend.Services.Integrations.WhatsAppService.SendWelcomeMessages() in D:\Siranjeevi\AIAssist\AiAgentBackend\Services\Integrations\WhatsAppService.cs:line 305
+2025-10-15 15:42:07.226 +05:30 [INF] WhatsApp connected successfully!
+2025-10-15 15:42:20.683 +05:30 [INF] HTTP GET /api/WhatsApp/status responded 200 in 3.5478 ms
+2025-10-15 15:42:32.952 +05:30 [INF] HTTP GET /webhooks/Webhooks/health responded 200 in 66.7801 ms
+2025-10-15 15:42:42.314 +05:30 [INF] HTTP GET /webhooks/Webhooks/test-whatsapp responded 200 in 13.5780 ms
+2025-10-15 15:42:56.363 +05:30 [INF] HTTP GET /api/WhatsApp/test responded 200 in 23.0282 ms
+2025-10-15 15:43:11.132 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 15:45:11.232 +05:30 [INF] Processing Gmail for 1 users
+2025-10-15 15:45:11.244 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-15 15:45:11.268 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 15:47:11.365 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 15:49:41.581 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 15:51:11.656 +05:30 [INF] Processing Gmail for 1 users
+2025-10-15 15:51:11.667 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-15 15:51:11.691 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-15 15:53:20.413 +05:30 [INF] Server hp:9784:675595c3 caught stopping signal...
+2025-10-15 15:53:20.417 +05:30 [INF] Application is shutting down...
+2025-10-15 15:53:20.582 +05:30 [INF] Server hp:9784:675595c3 All dispatchers stopped
+2025-10-15 15:53:20.676 +05:30 [INF] Server hp:9784:675595c3 successfully reported itself as stopped in 86.7702 ms
+2025-10-15 15:53:20.681 +05:30 [INF] Server hp:9784:675595c3 has been stopped in total 263.7403 ms

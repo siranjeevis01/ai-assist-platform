@@ -1,6 +1,8 @@
 // Middleware/ErrorHandlingMiddleware.cs
 using System.Net;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using OpenQA.Selenium;
 
 namespace AiAgentBackend.Middleware
 {
@@ -29,12 +31,13 @@ namespace AiAgentBackend.Middleware
 
         private Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
-            _logger.LogError(exception, "Unhandled exception occurred");
+            _logger.LogError(exception, "Unhandled exception occurred for request: {Method} {Path}", 
+                context.Request.Method, context.Request.Path);
 
             var code = HttpStatusCode.InternalServerError;
             var message = "An unexpected error occurred";
+            var details = exception.Message;
 
-            // Handle specific exception types
             switch (exception)
             {
                 case UnauthorizedAccessException:
@@ -50,9 +53,30 @@ namespace AiAgentBackend.Middleware
                     code = HttpStatusCode.NotFound;
                     message = "Resource not found";
                     break;
+                case DbUpdateException:
+                    code = HttpStatusCode.BadRequest;
+                    message = "Database update failed";
+                    details = "There was an error saving data to the database";
+                    break;
+                case WebDriverException:
+                    code = HttpStatusCode.ServiceUnavailable;
+                    message = "WhatsApp service temporarily unavailable";
+                    details = "The WhatsApp Web driver encountered an error";
+                    break;
+                case TimeoutException:
+                    code = HttpStatusCode.RequestTimeout;
+                    message = "Request timeout";
+                    break;
             }
 
-            var result = JsonSerializer.Serialize(new { error = message });
+            // Don't expose stack traces in production
+            var environment = context.RequestServices.GetRequiredService<IWebHostEnvironment>();
+            if (environment.IsProduction())
+            {
+                details = null;
+            }
+
+            var result = JsonSerializer.Serialize(new { error = message, details });
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = (int)code;
 

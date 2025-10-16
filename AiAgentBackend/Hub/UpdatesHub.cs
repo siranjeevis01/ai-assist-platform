@@ -20,6 +20,14 @@ namespace AiAgentBackend.Hubs
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, $"user-{userId}");
                 _logger.LogInformation("User {UserId} connected to hub with connection {ConnectionId}", userId, Context.ConnectionId);
+                
+                // Send current status
+                await Clients.Caller.SendAsync("ReceiveUpdate", new
+                {
+                    Type = "ConnectionEstablished",
+                    Message = "Real-time updates connected",
+                    Timestamp = DateTime.UtcNow
+                });
             }
             
             await base.OnConnectedAsync();
@@ -37,28 +45,26 @@ namespace AiAgentBackend.Hubs
             await base.OnDisconnectedAsync(exception);
         }
 
-        public async Task SendUpdate(string userId, object data)
+        public async Task SendUserUpdate(string userId, object data)
         {
             await Clients.Group($"user-{userId}").SendAsync("ReceiveUpdate", data);
         }
 
-        public async Task SubscribeToUser()
+        public async Task SubscribeToUserUpdates()
         {
             var userId = Context.User?.FindFirst("uid")?.Value ?? Context.User?.FindFirst("sub")?.Value;
             if (!string.IsNullOrEmpty(userId))
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, $"user-{userId}");
-                _logger.LogInformation("User {UserId} subscribed to updates", userId);
-            }
-        }
-
-        public async Task UnsubscribeFromUser()
-        {
-            var userId = Context.User?.FindFirst("uid")?.Value ?? Context.User?.FindFirst("sub")?.Value;
-            if (!string.IsNullOrEmpty(userId))
-            {
-                await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"user-{userId}");
-                _logger.LogInformation("User {UserId} unsubscribed from updates", userId);
+                _logger.LogInformation("User {UserId} subscribed to real-time updates", userId);
+                
+                await Clients.Caller.SendAsync("ReceiveUpdate", new
+                {
+                    Type = "SubscriptionConfirmed",
+                    Message = "Subscribed to real-time updates",
+                    UserId = userId,
+                    Timestamp = DateTime.UtcNow
+                });
             }
         }
     }

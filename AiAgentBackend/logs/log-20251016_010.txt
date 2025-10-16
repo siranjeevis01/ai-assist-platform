@@ -1,0 +1,110 @@
+2025-10-16 18:11:47.384 +05:30 [WRN] Sensitive data logging is enabled. Log entries and exception messages may include sensitive application data; this mode should only be enabled during development.
+2025-10-16 18:11:48.412 +05:30 [INF] DB tables already exist. Exit install
+2025-10-16 18:11:50.222 +05:30 [WRN] Overriding address(es) 'http://localhost:5000'. Binding to endpoints defined via IConfiguration and/or UseKestrel() instead.
+2025-10-16 18:11:50.240 +05:30 [INF] Now listening on: http://[::]:5000
+2025-10-16 18:11:50.257 +05:30 [INF] Starting Hangfire Server using job storage: 'Server: 127.0.0.1@AiAgentDb'
+2025-10-16 18:11:50.261 +05:30 [INF] Using the following options for SQL Server job storage:
+2025-10-16 18:11:50.266 +05:30 [INF]     Queue poll interval: 00:00:30.
+2025-10-16 18:11:50.270 +05:30 [INF] Using the following options for Hangfire Server:
+    Worker count: 4
+    Listening queues: 'critical', 'default', 'low'
+    Shutdown timeout: 00:00:15
+    Schedule polling interval: 00:00:15
+2025-10-16 18:11:50.292 +05:30 [INF] Application started. Press Ctrl+C to shut down.
+2025-10-16 18:11:50.297 +05:30 [INF] Hosting environment: Development
+2025-10-16 18:11:50.302 +05:30 [INF] Content root path: D:\Siranjeevi\AIAssist\AiAgentBackend
+2025-10-16 18:11:50.314 +05:30 [INF] Server hp:9676:e11e1914 successfully announced in 15.4883 ms
+2025-10-16 18:11:50.321 +05:30 [INF] Server hp:9676:e11e1914 is starting the registered dispatchers: ServerWatchdog, ServerJobCancellationWatcher, ExpirationManager, CountersAggregator, Worker, DelayedJobScheduler, RecurringJobScheduler...
+2025-10-16 18:11:50.360 +05:30 [INF] Server hp:9676:e11e1914 all the dispatchers started
+2025-10-16 18:12:20.822 +05:30 [INF] Found 0 events due for reminders
+2025-10-16 18:12:20.822 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-16 18:12:20.822 +05:30 [INF] Processing Gmail for 1 users
+2025-10-16 18:12:20.925 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-16 18:12:20.926 +05:30 [INF] Processing email alerts for 0 users
+2025-10-16 18:12:20.938 +05:30 [INF] Found 0 events due for reminders
+2025-10-16 18:12:21.018 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-16 18:12:39.792 +05:30 [INF] User logged in: siranjeevi@neolysi.com
+2025-10-16 18:12:39.844 +05:30 [INF] HTTP POST /api/Auth/login responded 200 in 1921.8072 ms
+2025-10-16 18:13:21.980 +05:30 [INF] HTTP GET /api/google/status responded 200 in 97.6288 ms
+2025-10-16 18:13:32.640 +05:30 [INF] HTTP GET /api/Users/me responded 200 in 67.2352 ms
+2025-10-16 18:13:58.583 +05:30 [INF] WhatsApp connection initiated via API
+2025-10-16 18:13:58.602 +05:30 [INF] Initializing real WhatsApp Web connection...
+2025-10-16 18:14:02.781 +05:30 [INF] Real WhatsApp Web service initialized successfully on port 60797
+2025-10-16 18:14:02.786 +05:30 [INF] Navigating to WhatsApp Web... Attempt 1
+2025-10-16 18:14:11.278 +05:30 [INF] Page loaded successfully
+2025-10-16 18:14:11.288 +05:30 [INF] Successfully navigated to WhatsApp Web
+2025-10-16 18:14:11.293 +05:30 [INF] Waiting for QR code to appear...
+2025-10-16 18:14:22.420 +05:30 [INF] ✅ QR code detected and ready for scanning
+2025-10-16 18:14:22.431 +05:30 [INF] Monitoring WhatsApp Web connection...
+2025-10-16 18:14:22.441 +05:30 [INF] HTTP POST /api/WhatsApp/connect responded 200 in 23868.5538 ms
+2025-10-16 18:14:22.458 +05:30 [WRN] Error during driver cleanup
+System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at System.Threading.CancellationTokenSource.Cancel()
+   at AiAgentBackend.Services.Integrations.RealWhatsAppWebService.CleanupDriver() in D:\Siranjeevi\AIAssist\AiAgentBackend\Services\Integrations\RealWhatsAppWebService.cs:line 93
+2025-10-16 18:14:22.549 +05:30 [INF] QR code disappeared, checking if connected...
+2025-10-16 18:14:22.572 +05:30 [WRN] QR code disappeared but connection not established
+2025-10-16 18:14:22.588 +05:30 [INF] Waiting for QR code to appear...
+2025-10-16 18:14:23.135 +05:30 [INF] ✅ QR code detected and ready for scanning
+2025-10-16 18:14:23.603 +05:30 [WRN] Error during connection monitoring
+System.Threading.Tasks.TaskCanceledException: A task was canceled.
+   at AiAgentBackend.Services.Integrations.RealWhatsAppWebService.MonitorConnectionAsync(CancellationToken cancellationToken) in D:\Siranjeevi\AIAssist\AiAgentBackend\Services\Integrations\RealWhatsAppWebService.cs:line 512
+2025-10-16 18:14:51.054 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-16 18:14:51.085 +05:30 [INF] Found 0 events due for reminders
+2025-10-16 18:14:57.620 +05:30 [INF] HTTP GET /api/WhatsApp/status responded 200 in 10.5551 ms
+2025-10-16 18:15:11.428 +05:30 [INF] HTTP GET /api/WhatsApp/test-connection responded 200 in 42.7194 ms
+2025-10-16 18:15:21.244 +05:30 [INF] HTTP GET /api/WhatsApp/qr responded 200 in 13.4379 ms
+2025-10-16 18:15:52.326 +05:30 [INF] HTTP GET /health/real-time responded 200 in 272.8035 ms
+2025-10-16 18:15:59.275 +05:30 [INF] HTTP GET /whatsapp-status responded 200 in 8.7408 ms
+2025-10-16 18:16:21.245 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-16 18:16:21.313 +05:30 [INF] Processing email alerts for 0 users
+2025-10-16 18:16:21.275 +05:30 [INF] Found 0 events due for reminders
+2025-10-16 18:16:21.194 +05:30 [INF] Processing Gmail for 1 users
+2025-10-16 18:16:21.417 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-16 18:16:32.728 +05:30 [WRN] The query uses the 'First'/'FirstOrDefault' operator without 'OrderBy' and filter operators. This may lead to unpredictable results.
+2025-10-16 18:16:32.789 +05:30 [INF] WhatsApp connection status updated to: Disconnected
+2025-10-16 18:16:32.796 +05:30 [INF] WhatsApp disconnected successfully
+2025-10-16 18:16:32.801 +05:30 [INF] HTTP POST /api/WhatsApp/disconnect responded 200 in 88.2622 ms
+2025-10-16 18:19:21.497 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-16 18:19:21.517 +05:30 [INF] Found 0 events due for reminders
+2025-10-16 18:21:21.603 +05:30 [INF] Processing Gmail for 1 users
+2025-10-16 18:21:21.609 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-16 18:21:21.652 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-16 18:21:21.658 +05:30 [INF] Found 0 events due for reminders
+2025-10-16 18:21:21.696 +05:30 [INF] Processing email alerts for 0 users
+2025-10-16 18:23:21.766 +05:30 [INF] Found 0 events due for reminders
+2025-10-16 18:23:21.770 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-16 18:25:21.888 +05:30 [INF] Processing Gmail for 1 users
+2025-10-16 18:25:21.901 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-16 18:25:21.916 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-16 18:25:21.931 +05:30 [INF] Found 0 events due for reminders
+2025-10-16 18:25:21.998 +05:30 [INF] Processing email alerts for 0 users
+2025-10-16 18:27:23.129 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-16 18:27:23.134 +05:30 [INF] Found 0 events due for reminders
+2025-10-16 18:29:23.243 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-16 18:29:23.281 +05:30 [INF] Found 0 events due for reminders
+2025-10-16 18:31:23.338 +05:30 [INF] Processing Gmail for 1 users
+2025-10-16 18:31:23.458 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-16 18:31:23.487 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-16 18:31:23.572 +05:30 [INF] Found 0 events due for reminders
+2025-10-16 18:31:23.612 +05:30 [INF] Processing email alerts for 0 users
+2025-10-16 18:34:23.765 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-16 18:34:23.767 +05:30 [INF] Found 0 events due for reminders
+2025-10-16 18:36:23.863 +05:30 [INF] Processing Gmail for 1 users
+2025-10-16 18:36:23.871 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-16 18:36:23.928 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-16 18:36:23.930 +05:30 [INF] Found 0 events due for reminders
+2025-10-16 18:36:23.984 +05:30 [INF] Processing email alerts for 0 users
+2025-10-16 18:38:24.090 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-16 18:38:24.093 +05:30 [INF] Found 0 events due for reminders
+2025-10-16 18:40:24.206 +05:30 [INF] Processing Gmail for 1 users
+2025-10-16 18:40:24.253 +05:30 [WRN] User 1 has no phone number, skipping Gmail processing
+2025-10-16 18:40:24.265 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-16 18:40:24.303 +05:30 [INF] Found 0 events due for reminders
+2025-10-16 18:40:24.344 +05:30 [INF] Processing email alerts for 0 users
+2025-10-16 18:42:24.611 +05:30 [INF] Found 0 tasks due for reminders
+2025-10-16 18:42:24.639 +05:30 [INF] Found 0 events due for reminders
+2025-10-16 18:42:53.663 +05:30 [INF] Server hp:9676:e11e1914 caught stopping signal...
+2025-10-16 18:42:53.673 +05:30 [INF] Application is shutting down...
+2025-10-16 18:42:53.676 +05:30 [INF] Server hp:9676:e11e1914 All dispatchers stopped
+2025-10-16 18:42:53.714 +05:30 [INF] Server hp:9676:e11e1914 successfully reported itself as stopped in 5.0051 ms
+2025-10-16 18:42:53.718 +05:30 [INF] Server hp:9676:e11e1914 has been stopped in total 44.4921 ms

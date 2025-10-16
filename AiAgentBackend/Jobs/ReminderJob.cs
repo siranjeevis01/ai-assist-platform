@@ -55,68 +55,65 @@ public class UserItem
     public class ReminderJob
     {
         private readonly ApplicationDbContext _db;
-        private readonly IHttpWhatsAppService _wa;
         private readonly ILogger<ReminderJob> _logger;
+        private readonly IWhatsAppService _wa;
 
-        public ReminderJob(ApplicationDbContext db, IHttpWhatsAppService wa, ILogger<ReminderJob> logger)
+        public ReminderJob(ApplicationDbContext db, ILogger<ReminderJob> logger, IWhatsAppService wa)
         {
-            _wa = wa;
             _db = db;
             _logger = logger;
+            _wa = wa;
         }
 
-        [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 30, 60, 120 })]
-        public async Task RunAsync()
+    [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 30, 60, 120 })]
+    public async Task RunAsync()
+    {
+        try
         {
-            try
-            {
-                var now = DateTime.UtcNow;
-                var dueTasks = await _db.Tasks
-                    .Include(t => t.User)
-                    .Where(t => t.DueUtc.HasValue && 
-                           t.DueUtc <= now.AddMinutes(30) &&
-                           t.DueUtc > now &&
-                           t.Status != "Done" &&
-                           t.User != null)
-                    .ToListAsync();
+            var now = DateTime.UtcNow;
+            var dueTasks = await _db.Tasks
+                .Include(t => t.User)
+                .Where(t => t.DueUtc.HasValue && 
+                       t.DueUtc <= now.AddMinutes(30) &&
+                       t.DueUtc > now &&
+                       t.Status != "Done" &&
+                       t.User != null)
+                .ToListAsync();
 
-                foreach (var task in dueTasks)
+            foreach (var task in dueTasks)
+            {
+                try
                 {
-                    try
-                    {
-                        await _wa.SendReminderAsync( // Use _wa instead of undefined wa
-                            task.UserId,
-                            "task",
-                            task.Title,
-                            task.DueUtc!.Value,
-                            task.Description ?? ""
-                        );
-                        _logger.LogInformation("Sent reminder for task {TaskId} to user {UserId}", task.Id, task.UserId);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to send reminder for task {TaskId}", task.Id);
-                    }
+                    // You'll need to implement SendReminderAsync or use SendMessageAsync
+                    await _wa.SendMessageAsync(
+                        task.UserId,
+                        $"Reminder: {task.Title} is due at {task.DueUtc!.Value:MMM dd, yyyy HH:mm}"
+                    );
+                    _logger.LogInformation("Sent reminder for task {TaskId} to user {UserId}", task.Id, task.UserId);
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error in ReminderJob");
-            }
-        }
-
-        private async Task ProcessTaskReminders()
-        {
-            // Update any method that uses 'wa' to use '_wa'
-            var tasks = await _db.Tasks.ToListAsync();
-            foreach (var task in tasks)
-            {
-                if (task.DueUtc.HasValue)
+                catch (Exception ex)
                 {
-                    await _wa.SendMessageAsync(task.UserId, $"Reminder: {task.Title} is due!");
+                    _logger.LogError(ex, "Failed to send reminder for task {TaskId}", task.Id);
                 }
             }
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in ReminderJob");
+        }
+    }
+
+    private async Task ProcessTaskReminders()
+    {
+        var tasks = await _db.Tasks.ToListAsync();
+        foreach (var task in tasks)
+        {
+            if (task.DueUtc.HasValue)
+            {
+                await _wa.SendMessageAsync(task.UserId, $"Reminder: {task.Title} is due!");
+            }
+        }
+    }
 
         private async Task ProcessEventReminders(DateTime now)
         {

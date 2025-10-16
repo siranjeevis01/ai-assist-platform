@@ -108,8 +108,9 @@ namespace AiAgentBackend.Controllers
             {
                 if (string.IsNullOrEmpty(code)) return BadRequest(new { error = "Missing authorization code" });
                 if (string.IsNullOrEmpty(state)) return BadRequest(new { error = "Missing state parameter" });
+                if (!int.TryParse(state, out int userId)) return BadRequest(new { error = "Invalid state parameter" });
 
-                var userId = int.Parse(state);
+                // Remove the duplicate declaration: var userId = int.Parse(state);
 
                 using var http = new HttpClient();
                 var content = new FormUrlEncodedContent(new Dictionary<string, string>
@@ -130,10 +131,22 @@ namespace AiAgentBackend.Controllers
                 }
 
                 var json = await response.Content.ReadAsStringAsync();
-                var tokenResponse = JsonSerializer.Deserialize<GoogleTokenResponse>(json);
+                GoogleTokenResponse? tokenResponse = null;
 
-                if (tokenResponse == null)
-                    return BadRequest(new { error = "Invalid token response" });
+                try 
+                {
+                    tokenResponse = JsonSerializer.Deserialize<GoogleTokenResponse>(json);
+                    if (tokenResponse?.AccessToken == null)
+                    {
+                        _logger.LogError("Invalid token response from Google");
+                        return BadRequest(new { error = "Invalid token response from Google" });
+                    }
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogError(ex, "Failed to parse Google token response");
+                    return BadRequest(new { error = "Invalid response format from Google" });
+                }
 
                 var providerToken = await _db.ProviderTokens
                     .FirstOrDefaultAsync(t => t.UserId == userId && t.Provider == "Google");
@@ -144,6 +157,7 @@ namespace AiAgentBackend.Controllers
                     _db.ProviderTokens.Add(providerToken);
                 }
 
+                // Now tokenResponse is defined in this scope
                 providerToken.EncryptedAccessToken = tokenResponse.AccessToken;
                 providerToken.RefreshToken = tokenResponse.RefreshToken ?? providerToken.RefreshToken;
                 providerToken.Scope = tokenResponse.Scope;

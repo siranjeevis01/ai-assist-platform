@@ -4,25 +4,26 @@ namespace AiAgentBackend.Utils
 {
     public static class TextCleaner
     {
+        private static readonly Regex HtmlRegex = new Regex("<.*?>", RegexOptions.Compiled);
+        private static readonly Regex UrlRegex = new Regex(@"http[^\s]+", RegexOptions.Compiled);
+        private static readonly Regex ExtraSpacesRegex = new Regex(@"\s+", RegexOptions.Compiled);
+
         public static string CleanForNlp(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
                 return string.Empty;
 
             // Remove HTML tags
-            text = Regex.Replace(text, "<.*?>", string.Empty);
+            text = HtmlRegex.Replace(text, string.Empty);
             
             // Remove URLs
-            text = Regex.Replace(text, @"http[^\s]+", string.Empty);
-            
-            // Remove email headers and metadata
-            text = Regex.Replace(text, @"(From:|Subject:|To:|Date:).*?\n", string.Empty);
+            text = UrlRegex.Replace(text, string.Empty);
             
             // Remove excessive whitespace
-            text = Regex.Replace(text, @"\s+", " ").Trim();
+            text = ExtraSpacesRegex.Replace(text, " ").Trim();
             
             // Limit length for API calls
-            return text.Length > 300 ? text.Substring(0, 300) + "..." : text;
+            return text.Length > 500 ? text.Substring(0, 500) : text;
         }
 
         public static bool IsValidForAnalysis(string text)
@@ -30,11 +31,24 @@ namespace AiAgentBackend.Utils
             if (string.IsNullOrWhiteSpace(text))
                 return false;
 
-            var cleanText = CleanForNlp(text);
-            
-            // Check if text has meaningful content (not just HTML/URLs)
-            return cleanText.Length >= 10 && 
-                   cleanText.Split(' ').Length >= 2;
+            // Check minimum length
+            if (text.Trim().Length < 3)
+                return false;
+
+            // Check if it's just special characters
+            var cleanText = Regex.Replace(text, @"[^\w]", "");
+            if (cleanText.Length < 2)
+                return false;
+
+            return true;
+        }
+
+        public static string Truncate(this string text, int maxLength)
+        {
+            if (string.IsNullOrEmpty(text) || text.Length <= maxLength)
+                return text;
+
+            return text.Substring(0, maxLength - 3) + "...";
         }
     }
 }

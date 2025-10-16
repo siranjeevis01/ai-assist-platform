@@ -15,4 +15,4 @@ namespace AiAgentBackend.DTOs.Event
         public string? Location { get; set; }
         public string? Source { get; set; }
     }
-}    
+}
