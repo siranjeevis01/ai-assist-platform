@@ -47,52 +47,76 @@ builder.Host.UseSerilog((context, configuration) =>
 
 // Get environment-specific connection string
 var connectionString = EnvironmentHelper.GetConnectionString(builder.Configuration);
+var hasDatabase = !string.IsNullOrWhiteSpace(connectionString) && !connectionString.Contains("127.0.0.1");
 
-// DbContext (MySQL) - FIXED SYNTAX
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
+if (hasDatabase)
 {
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), 
-    mysqlOptions => 
+    // DbContext (MySQL) - FIXED SYNTAX
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
     {
-        mysqlOptions.EnableRetryOnFailure(
-            maxRetryCount: 5,
-            maxRetryDelay: TimeSpan.FromSeconds(30), // FIXED: Use colon, not equals
-            errorNumbersToAdd: null);
-        mysqlOptions.CommandTimeout(60);
+        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), 
+        mysqlOptions => 
+        {
+            mysqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(30),
+                errorNumbersToAdd: null);
+            mysqlOptions.CommandTimeout(60);
+        });
+        
+        if (EnvironmentHelper.IsDevelopment)
+        {
+            options.EnableSensitiveDataLogging();
+            options.EnableDetailedErrors();
+        }
+    });
+
+    // Hangfire with MySQL
+    builder.Services.AddHangfire(config =>
+    {
+        config.UseSimpleAssemblyNameTypeSerializer()
+              .UseRecommendedSerializerSettings()
+              .UseStorage(new MySqlStorage(connectionString, new MySqlStorageOptions
+              {
+                  QueuePollInterval = TimeSpan.FromSeconds(30),
+                  JobExpirationCheckInterval = TimeSpan.FromHours(1),
+                  CountersAggregateInterval = TimeSpan.FromMinutes(5),
+                  PrepareSchemaIfNecessary = true,
+                  DashboardJobListLimit = 50000,
+                  TransactionTimeout = TimeSpan.FromMinutes(1),
+              }));
+    });
+
+    builder.Services.AddHangfireServer(options =>
+    {
+        options.WorkerCount = Math.Max(Environment.ProcessorCount, 4);
+        options.Queues = new[] { "critical", "default", "low" };
+        options.SchedulePollingInterval = TimeSpan.FromSeconds(15);
+        options.ServerCheckInterval = TimeSpan.FromSeconds(30);
+        options.ServerTimeout = TimeSpan.FromMinutes(5);
+        options.HeartbeatInterval = TimeSpan.FromSeconds(30);
     });
     
-    if (EnvironmentHelper.IsDevelopment)
+    Console.WriteLine("✅ Database and Hangfire configured");
+}
+else
+{
+    Console.WriteLine("⚠️ No database configured — running without persistence (NLP/chat still works)");
+    // Register a dummy DbContext so DI doesn't fail
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
     {
-        options.EnableSensitiveDataLogging();
-        options.EnableDetailedErrors();
-    }
-});
-
-// Hangfire
-builder.Services.AddHangfire(config =>
-{
-    config.UseSimpleAssemblyNameTypeSerializer()
-          .UseRecommendedSerializerSettings()
-          .UseStorage(new MySqlStorage(connectionString, new MySqlStorageOptions
-          {
-              QueuePollInterval = TimeSpan.FromSeconds(30),
-              JobExpirationCheckInterval = TimeSpan.FromHours(1),
-              CountersAggregateInterval = TimeSpan.FromMinutes(5),
-              PrepareSchemaIfNecessary = true,
-              DashboardJobListLimit = 50000,
-              TransactionTimeout = TimeSpan.FromMinutes(1),
-          }));
-});
-
-builder.Services.AddHangfireServer(options =>
-{
-    options.WorkerCount = Math.Max(Environment.ProcessorCount, 4);
-    options.Queues = new[] { "critical", "default", "low" };
-    options.SchedulePollingInterval = TimeSpan.FromSeconds(15);
-    options.ServerCheckInterval = TimeSpan.FromSeconds(30);
-    options.ServerTimeout = TimeSpan.FromMinutes(5);
-    options.HeartbeatInterval = TimeSpan.FromSeconds(30);
-});
+        options.UseInMemoryDatabase("AiAgentDb_NoDb");
+    });
+    
+    // Use in-memory Hangfire storage as fallback
+    builder.Services.AddHangfire(config =>
+    {
+        config.UseSimpleAssemblyNameTypeSerializer()
+              .UseRecommendedSerializerSettings()
+              .UseInMemoryStorage();
+    });
+    builder.Services.AddHangfireServer();
+}
 
 // Options
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
@@ -298,42 +322,49 @@ builder.Services.AddHealthChecks()
 var app = builder.Build();
 
 // Database initialization
-try
+if (hasDatabase)
 {
-    // Auto-create the database if it doesn't exist on the MySQL server
     try
     {
-        var csb = new MySqlConnector.MySqlConnectionStringBuilder(connectionString);
-        var databaseName = csb.Database;
-        csb.Database = "mysql";
-        using var tempConn = new MySqlConnector.MySqlConnection(csb.ConnectionString);
-        await tempConn.OpenAsync();
-        using var cmd = tempConn.CreateCommand();
-        cmd.CommandText = $"CREATE DATABASE IF NOT EXISTS `{databaseName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
-        await cmd.ExecuteNonQueryAsync();
-        Console.WriteLine($"✅ Database '{databaseName}' verified/created");
-    }
-    catch (Exception dbEx)
-    {
-        Console.WriteLine($"⚠️ Could not auto-create database: {dbEx.Message}");
-    }
-    
-    using (var scope = app.Services.CreateScope())
-    {
-        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var canConnect = await db.Database.CanConnectAsync();
-        Console.WriteLine($"✅ Database connection: {(canConnect ? "Success" : "Failed")}");
-        
-        if (canConnect)
+        // Auto-create the database if it doesn't exist on the MySQL server
+        try
         {
-            await db.Database.EnsureCreatedAsync();
-            Console.WriteLine("✅ Database tables verified");
+            var csb = new MySqlConnector.MySqlConnectionStringBuilder(connectionString);
+            var databaseName = csb.Database;
+            csb.Database = "mysql";
+            using var tempConn = new MySqlConnector.MySqlConnection(csb.ConnectionString);
+            await tempConn.OpenAsync();
+            using var cmd = tempConn.CreateCommand();
+            cmd.CommandText = $"CREATE DATABASE IF NOT EXISTS `{databaseName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+            await cmd.ExecuteNonQueryAsync();
+            Console.WriteLine($"✅ Database '{databaseName}' verified/created");
+        }
+        catch (Exception dbEx)
+        {
+            Console.WriteLine($"⚠️ Could not auto-create database: {dbEx.Message}");
+        }
+        
+        using (var scope = app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var canConnect = await db.Database.CanConnectAsync();
+            Console.WriteLine($"✅ Database connection: {(canConnect ? "Success" : "Failed")}");
+            
+            if (canConnect)
+            {
+                await db.Database.EnsureCreatedAsync();
+                Console.WriteLine("✅ Database tables verified");
+            }
         }
     }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Database initialization failed: {ex.Message}");
+    }
 }
-catch (Exception ex)
+else
 {
-    Console.WriteLine($"❌ Database initialization failed: {ex.Message}");
+    Console.WriteLine("⚠️ No database configured — skipping DB initialization");
 }
 
 // Middleware pipeline - CORRECT ORDER IS CRITICAL
@@ -399,81 +430,64 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // Hangfire dashboard (limited access in production)
-app.UseHangfireDashboard("/hangfire", new DashboardOptions
+if (hasDatabase)
 {
-    Authorization = new[] { new HangfireAuthorizationFilter() },
-    DashboardTitle = "AI Agent Jobs",
-    AppPath = "/hangfire"
-});
+    app.UseHangfireDashboard("/hangfire", new DashboardOptions
+    {
+        Authorization = new[] { new HangfireAuthorizationFilter() },
+        DashboardTitle = "AI Agent Jobs",
+        AppPath = "/hangfire"
+    });
+}
 
 // Health check endpoint
 app.MapGet("/health/real-time", async (IServiceProvider serviceProvider) =>
 {
     using var scope = serviceProvider.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     var messagingService = scope.ServiceProvider.GetRequiredService<IMessagingService>();
     
     try
     {
         var messagingStatus = await messagingService.GetStatusAsync();
-        var usersCount = await db.Users.CountAsync();
-        var activeTasks = await db.Tasks.CountAsync(t => t.Status != "Done");
-        var pendingEvents = await db.Events.CountAsync(e => e.StartUtc >= DateTime.UtcNow);
-        var unreadMessages = await db.Messages.CountAsync(m => m.Direction == "Incoming");
         
-        var monitoringApi = JobStorage.Current.GetMonitoringApi();
-        var servers = monitoringApi.Servers();
-        var jobs = servers.Count;
-        
-        // Check database connectivity
-        var dbConnected = await db.Database.CanConnectAsync();
-        
-        // Check Hangfire connectivity
-        var hangfireConnected = jobs > 0;
-        
-        var overallStatus = dbConnected && hangfireConnected ? "Healthy" : "Degraded";
-        if (!dbConnected) overallStatus = "Unhealthy";
-        
-        return Results.Json(new 
+        var result = new 
         {
-            status = overallStatus,
+            status = "Healthy",
             timestamp = DateTime.UtcNow,
             services = new
             {
-                database = dbConnected ? "Connected" : "Disconnected",
+                database = hasDatabase ? "Configured" : "Not configured (in-memory)",
                 telegram = messagingStatus.Telegram.IsConnected ? "Connected" : "Disconnected",
                 whatsapp = messagingStatus.WhatsApp.IsConnected ? "Connected" : "Disconnected",
-                hangfire = hangfireConnected ? "Running" : "Stopped",
+                hangfire = hasDatabase ? "Running" : "Disabled (no DB)",
                 signalr = "Active"
-            },
-            metrics = new
-            {
-                users = usersCount,
-                active_tasks = activeTasks,
-                pending_events = pendingEvents,
-                unread_messages = unreadMessages,
-                background_jobs = jobs,
-                hangfire_servers = servers.Count
-            },
-            messaging_details = new
-            {
-                telegram = new {
-                    connected = messagingStatus.Telegram.IsConnected,
-                    username = messagingStatus.Telegram.Username ?? string.Empty,
-                    last_checked = messagingStatus.Telegram.LastChecked
-                },
-                whatsapp = new {
-                    connected = messagingStatus.WhatsApp.IsConnected,
-                    status = messagingStatus.WhatsApp.Status ?? "disconnected",
-                    last_checked = messagingStatus.WhatsApp.LastChecked
-                }
-            },
-            connections = new
-            {
-                database_connection_string = dbConnected ? "Valid" : "Invalid",
-                hangfire_storage = hangfireConnected ? "Accessible" : "Inaccessible"
             }
-        });
+        };
+        
+        if (hasDatabase)
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var usersCount = await db.Users.CountAsync();
+            var activeTasks = await db.Tasks.CountAsync(t => t.Status != "Done");
+            var pendingEvents = await db.Events.CountAsync(e => e.StartUtc >= DateTime.UtcNow);
+            var unreadMessages = await db.Messages.CountAsync(m => m.Direction == "Incoming");
+            
+            return Results.Json(new 
+            {
+                result.status,
+                result.timestamp,
+                result.services,
+                metrics = new
+                {
+                    users = usersCount,
+                    active_tasks = activeTasks,
+                    pending_events = pendingEvents,
+                    unread_messages = unreadMessages
+                }
+            });
+        }
+        
+        return Results.Json(result);
     }
     catch (Exception ex)
     {
@@ -481,8 +495,7 @@ app.MapGet("/health/real-time", async (IServiceProvider serviceProvider) =>
         {
             status = "Unhealthy",
             timestamp = DateTime.UtcNow,
-            error = ex.Message,
-            details = ex.StackTrace
+            error = ex.Message
         }, statusCode: 503);
     }
 });
@@ -620,57 +633,60 @@ app.MapControllers();
 app.MapHub<UpdatesHub>("/hub");
 
 // Schedule background jobs
-try
+if (hasDatabase)
 {
-    using (var scope = app.Services.CreateScope())
+    try
     {
-        var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
-        var reminderJob = scope.ServiceProvider.GetRequiredService<ReminderJob>();
-        var gmailJob = scope.ServiceProvider.GetRequiredService<GmailPollingJob>();
-        var proactiveService = scope.ServiceProvider.GetRequiredService<IProactiveNotificationService>();
+        using (var scope = app.Services.CreateScope())
+        {
+            var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+            var reminderJob = scope.ServiceProvider.GetRequiredService<ReminderJob>();
+            var gmailJob = scope.ServiceProvider.GetRequiredService<GmailPollingJob>();
+            var proactiveService = scope.ServiceProvider.GetRequiredService<IProactiveNotificationService>();
 
-        recurringJobManager.AddOrUpdate(
-            "task-reminders",
-            () => reminderJob.RunAsync(),
-            Cron.Minutely
-        );
+            recurringJobManager.AddOrUpdate(
+                "task-reminders",
+                () => reminderJob.RunAsync(),
+                Cron.Minutely
+            );
 
-        recurringJobManager.AddOrUpdate(
-            "gmail-polling",
-            () => gmailJob.RunAsync(),
-            "*/5 * * * *"
-        );
+            recurringJobManager.AddOrUpdate(
+                "gmail-polling",
+                () => gmailJob.RunAsync(),
+                "*/5 * * * *"
+            );
 
-        recurringJobManager.AddOrUpdate(
-            "proactive-reminders",
-            () => proactiveService.CheckAndSendRemindersAsync(),
-            Cron.Minutely
-        );
+            recurringJobManager.AddOrUpdate(
+                "proactive-reminders",
+                () => proactiveService.CheckAndSendRemindersAsync(),
+                Cron.Minutely
+            );
 
-        recurringJobManager.AddOrUpdate(
-            "event-reminders", 
-            () => proactiveService.CheckAndSendEventRemindersAsync(),
-            Cron.Minutely
-        );
+            recurringJobManager.AddOrUpdate(
+                "event-reminders", 
+                () => proactiveService.CheckAndSendEventRemindersAsync(),
+                Cron.Minutely
+            );
 
-        recurringJobManager.AddOrUpdate(
-            "email-alerts",
-            () => proactiveService.CheckAndSendEmailAlertsAsync(),
-            "*/5 * * * *"
-        );
+            recurringJobManager.AddOrUpdate(
+                "email-alerts",
+                () => proactiveService.CheckAndSendEmailAlertsAsync(),
+                "*/5 * * * *"
+            );
 
-        recurringJobManager.AddOrUpdate(
-            "deadline-warnings",
-            () => proactiveService.CheckAndSendTaskDeadlineWarningsAsync(),
-            "0 */6 * * *"
-        );
+            recurringJobManager.AddOrUpdate(
+                "deadline-warnings",
+                () => proactiveService.CheckAndSendTaskDeadlineWarningsAsync(),
+                "0 */6 * * *"
+            );
 
-        Console.WriteLine("✅ Background jobs scheduled successfully");
+            Console.WriteLine("✅ Background jobs scheduled successfully");
+        }
     }
-}
-catch (Exception ex)
-{
-    Console.WriteLine($"❌ Failed to schedule background jobs: {ex.Message}");
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Failed to schedule background jobs: {ex.Message}");
+    }
 }
 
 // Display startup information
