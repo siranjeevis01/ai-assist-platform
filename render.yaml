@@ -19,25 +19,39 @@ services:
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: Gemini__ApiKey
-        sync: false
+        value: AQ.Ab8RN6JW_IVU-HLk5Xnbl05w1bMIRzekn4E0PbYkF95z6JG5oQ
       - key: Google__ClientId
-        sync: false
+        value: 793515487928-mgphcrceiimfukhgf6429h0l6ophflef.apps.googleusercontent.com
       - key: Google__ClientSecret
         sync: false
+      - key: Messaging__Telegram__Enabled
+        value: "true"
       - key: Messaging__Telegram__BotToken
-        sync: false
-      - key: Messaging__WhatsApp__AccessToken
-        sync: false
+        value: 8369514259:AAE4Mx7Uu1I_7Y30z6zFcuwMTE08AazZiX4
+      - key: Messaging__WhatsApp__Enabled
+        value: "false"
       - key: Messaging__WhatsApp__VerifyToken
-        generateValue: true
-      - key: Messaging__WhatsApp__PhoneNumberId
-        sync: false
+        value: ai-agent-verify-2024
       - key: Trello__ApiKey
-        sync: false
+        value: 1d953dad7a72ec18f93487a0716a31e7
       - key: Trello__ApiSecret
-        sync: false
+        value: 74813efaef01881a16802b46da51ec1dd4b24c2a9d44aad98acd44530b68d862
       - key: Trello__AccessToken
         sync: false
+      - key: OpenAI__ApiKey
+        sync: false
+      - key: OpenAI__Model
+        value: gpt-4o-mini
+      - key: Smtp__Host
+        value: smtp.gmail.com
+      - key: Smtp__Port
+        value: "587"
+      - key: Smtp__Username
+        value: siranjeevicad01@gmail.com
+      - key: Smtp__Password
+        sync: false
+      - key: Smtp__EnableSsl
+        value: "true"
     healthCheckPath: /health/real-time
     plan: free
     autoDeploy: true
@@ -48,9 +62,6 @@ services:
     dockerfilePath: ./ai-agent-frontend/Dockerfile
     buildArgs:
       API_URL: https://ai-agent-backend.onrender.com
-    envVars:
-      - key: API_URL
-        value: https://ai-agent-backend.onrender.com
     plan: free
     autoDeploy: true
 
