@@ -12,22 +12,12 @@ services:
         value: https://ai-agent-frontend-46u3.onrender.com,https://aiagent-siranjeevis01.web.app,https://aiagent-siranjeevis01.firebaseapp.com
       - key: AI_AGENT_BASE_URL
         value: https://ai-agent-backend-ko2p.onrender.com
-      - key: Gemini__ApiKey
-        value: AQ.Ab8RN6JW_IVU-HLk5Xnbl05w1bMIRzekn4E0PbYkF95z6JG5oQ
-      - key: Google__ClientId
-        value: 793515487928-mgphcrceiimfukhgf6429h0l6ophflef.apps.googleusercontent.com
       - key: Messaging__Telegram__Enabled
         value: "true"
-      - key: Messaging__Telegram__BotToken
-        value: 8369514259:AAE4Mx7Uu1I_7Y30z6zFcuwMTE08AazZiX4
       - key: Messaging__WhatsApp__Enabled
         value: "false"
       - key: Messaging__WhatsApp__VerifyToken
         value: ai-agent-verify-2024
-      - key: Trello__ApiKey
-        value: 1d953dad7a72ec18f93487a0716a31e7
-      - key: Trello__ApiSecret
-        value: 74813efaef01881a16802b46da51ec1dd4b24c2a9d44aad98acd44530b68d862
       - key: OpenAI__Model
         value: gpt-4o-mini
       - key: Smtp__Host
