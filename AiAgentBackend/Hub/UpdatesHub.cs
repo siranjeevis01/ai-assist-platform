@@ -67,5 +67,51 @@ namespace AiAgentBackend.Hubs
                 });
             }
         }
+
+        // Enhanced event methods for SignalR real-time updates
+        public async Task TaskUpdated(object task)
+        {
+            var userId = Context.User?.FindFirst("uid")?.Value ?? Context.User?.FindFirst("sub")?.Value;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                await Clients.Group($"user-{userId}").SendAsync("TaskUpdated", task);
+            }
+        }
+
+        public async Task EventReminder(object reminder)
+        {
+            var userId = Context.User?.FindFirst("uid")?.Value ?? Context.User?.FindFirst("sub")?.Value;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                await Clients.Group($"user-{userId}").SendAsync("EventReminder", reminder);
+            }
+        }
+
+        public async Task NewMessage(object message)
+        {
+            var userId = Context.User?.FindFirst("uid")?.Value ?? Context.User?.FindFirst("sub")?.Value;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                await Clients.Group($"user-{userId}").SendAsync("NewMessage", message);
+            }
+        }
+
+        public async Task ProactiveNotification(object notification)
+        {
+            var userId = Context.User?.FindFirst("uid")?.Value ?? Context.User?.FindFirst("sub")?.Value;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                await Clients.Group($"user-{userId}").SendAsync("ProactiveNotification", notification);
+            }
+        }
+
+        public async Task StatsUpdated(object stats)
+        {
+            var userId = Context.User?.FindFirst("uid")?.Value ?? Context.User?.FindFirst("sub")?.Value;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                await Clients.Group($"user-{userId}").SendAsync("StatsUpdated", stats);
+            }
+        }
     }
 }

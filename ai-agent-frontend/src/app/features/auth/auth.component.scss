@@ -1,0 +1,168 @@
+.auth-page, .auth-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.auth-card {
+  background: white;
+  border-radius: 16px;
+  padding: 40px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 32px;
+
+  h1 {
+    margin: 0 0 8px;
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  p { color: #666; margin: 0; font-size: 1rem; }
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  .error-message {
+    padding: 12px;
+    background: #fff5f5;
+    color: #e74c3c;
+    border-radius: 8px;
+    font-size: 14px;
+    text-align: center;
+  }
+
+  .error-text {
+    color: #e74c3c;
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    label {
+      font-weight: 500;
+      color: #444;
+      font-size: 14px;
+    }
+
+    input, select, textarea {
+      padding: 12px 16px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+      outline: none;
+
+      &:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+      }
+    }
+
+    textarea { resize: vertical; min-height: 80px; }
+    select { cursor: pointer; background: white; }
+  }
+
+  .forgot-link {
+    align-items: flex-end;
+    a { color: #667eea; text-decoration: none; font-size: 14px; font-weight: 500;
+      &:hover { text-decoration: underline; }
+    }
+  }
+
+  .success-message {
+    padding: 12px;
+    background: #e8f5e9;
+    color: #2e7d32;
+    border-radius: 8px;
+    font-size: 14px;
+    text-align: center;
+  }
+
+  .auth-links {
+    text-align: center;
+    margin-top: 8px;
+    a { color: #667eea; text-decoration: none; font-size: 14px; font-weight: 500;
+      &:hover { text-decoration: underline; }
+    }
+  }
+
+  .form-row {
+    display: flex;
+    gap: 16px;
+
+    .form-group { flex: 1; }
+  }
+
+  .password-strength {
+    margin-top: 8px;
+
+    .strength-bar {
+      height: 4px;
+      background: #eee;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 6px;
+
+      .strength-fill {
+        height: 100%;
+        border-radius: 2px;
+        transition: width 0.3s;
+      }
+    }
+
+    .strength-text { font-size: 13px; color: #666; }
+    .password-feedback { margin-top: 6px; }
+    .feedback-item { font-size: 12px; color: #888; }
+  }
+
+  .auth-btn {
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(102,126,234,0.3); }
+    &:disabled { opacity: 0.6; cursor: not-allowed; }
+  }
+}
+
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(102,126,234,0.3); } &:disabled { opacity: 0.6; cursor: not-allowed; } }
+.btn-block { width: 100%; justify-content: center; padding: 14px; font-size: 16px; }
+
+.auth-footer {
+  text-align: center;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+
+  p { color: #666; font-size: 14px; margin: 0; }
+  a { color: #667eea; text-decoration: none; font-weight: 500; cursor: pointer;
+    &:hover { text-decoration: underline; }
+  }
+}

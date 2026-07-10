@@ -1,25 +1,26 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <InvariantGlobalization>true</InvariantGlobalization>
+    <InvariantGlobalization>false</InvariantGlobalization>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="DotNetEnv" Version="3.1.1" />
     <PackageReference Include="Google.Apis" Version="1.70.0" />
     <PackageReference Include="Google.Apis.Auth" Version="1.70.0" />
     <PackageReference Include="Google.Apis.Calendar.v3" Version="1.69.0.3746" />
     <PackageReference Include="Google.Apis.Gmail.v1" Version="1.70.0.3819" />
-    <PackageReference Include="Hangfire" Version="1.8.21" />
-    <PackageReference Include="Hangfire.Core" Version="1.8.21" />
-    <PackageReference Include="Hangfire.AspNetCore" Version="1.8.21" />
-    <PackageReference Include="Hangfire.NetCore" Version="1.8.21" />
+    <PackageReference Include="Hangfire" Version="1.8.23" />
+    <PackageReference Include="Hangfire.Core" Version="1.8.23" />
+    <PackageReference Include="Hangfire.AspNetCore" Version="1.8.23" />
+    <PackageReference Include="Hangfire.NetCore" Version="1.8.23" />
     <PackageReference Include="Hangfire.MySqlStorage" Version="2.0.3" />
     <PackageReference Include="Hangfire.Dashboard.BasicAuthorization" Version="1.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
-    <PackageReference Include="MimeKit" Version="4.13.0" />
+    <PackageReference Include="MimeKit" Version="4.17.0" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.8">
       <PrivateAssets>all</PrivateAssets>
@@ -35,15 +36,18 @@
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
     <PackageReference Include="System.Drawing.Common" Version="9.0.9" />
 
-    <PackageReference Include="Selenium.WebDriver" Version="4.20.0" />
-    <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="124.0.6367.20700" />
-    <PackageReference Include="Selenium.Support" Version="4.20.0" />
-
-    <!-- Add these for health checks and swagger annotations -->
+    <!-- Health checks and swagger annotations -->
     <PackageReference Include="AspNetCore.HealthChecks.UI" Version="8.0.1" />
     <PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="8.0.1" />
     <PackageReference Include="AspNetCore.HealthChecks.UI.InMemory.Storage" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="8.0.8" />
     <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="6.6.2" />
+  </ItemGroup>
+
+  <!-- Override transitive dependency versions to fix known vulnerabilities -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.9" />
+    <PackageReference Include="System.Text.Json" Version="9.0.9" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
   </ItemGroup>
 </Project>

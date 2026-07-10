@@ -3,6 +3,7 @@ using AiAgentBackend.Services.Integrations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Hangfire;
+using AiAgentBackend.Services.Messaging;
 
 namespace AiAgentBackend.Jobs
 {
@@ -56,64 +57,72 @@ public class UserItem
     {
         private readonly ApplicationDbContext _db;
         private readonly ILogger<ReminderJob> _logger;
-        private readonly IWhatsAppService _wa;
+        private readonly IMessagingService _messagingService; // Changed from IWhatsAppService
 
-        public ReminderJob(ApplicationDbContext db, ILogger<ReminderJob> logger, IWhatsAppService wa)
+        public ReminderJob(ApplicationDbContext db, ILogger<ReminderJob> logger, IMessagingService messagingService) // Updated parameter
         {
             _db = db;
             _logger = logger;
-            _wa = wa;
+            _messagingService = messagingService;
         }
 
-    [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 30, 60, 120 })]
-    public async Task RunAsync()
-    {
-        try
+        [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 30, 60, 120 })]
+        public async Task RunAsync()
         {
-            var now = DateTime.UtcNow;
-            var dueTasks = await _db.Tasks
-                .Include(t => t.User)
-                .Where(t => t.DueUtc.HasValue && 
-                       t.DueUtc <= now.AddMinutes(30) &&
-                       t.DueUtc > now &&
-                       t.Status != "Done" &&
-                       t.User != null)
-                .ToListAsync();
-
-            foreach (var task in dueTasks)
+            try
             {
-                try
+                var now = DateTime.UtcNow;
+                var dueTasks = await _db.Tasks
+                    .Include(t => t.User)
+                    .Where(t => t.DueUtc.HasValue && 
+                           t.DueUtc <= now.AddMinutes(30) &&
+                           t.DueUtc > now &&
+                           t.Status != "Done" &&
+                           t.User != null)
+                    .ToListAsync();
+
+                foreach (var task in dueTasks)
                 {
-                    // You'll need to implement SendReminderAsync or use SendMessageAsync
-                    await _wa.SendMessageAsync(
-                        task.UserId,
-                        $"Reminder: {task.Title} is due at {task.DueUtc!.Value:MMM dd, yyyy HH:mm}"
-                    );
-                    _logger.LogInformation("Sent reminder for task {TaskId} to user {UserId}", task.Id, task.UserId);
+                    try
+                    {
+                        // Use IMessagingService instead of IWhatsAppService
+                        var result = await _messagingService.SendMessageAsync(
+                            task.UserId,
+                            $"Reminder: {task.Title} is due at {task.DueUtc!.Value:MMM dd, yyyy HH:mm}"
+                        );
+                        
+                        if (result.Success)
+                        {
+                            _logger.LogInformation("Sent reminder for task {TaskId} to user {UserId}", task.Id, task.UserId);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Failed to send reminder for task {TaskId}: {Error}", task.Id, result.Error);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to send reminder for task {TaskId}", task.Id);
+                    }
                 }
-                catch (Exception ex)
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in ReminderJob");
+            }
+        }
+
+        private async Task ProcessTaskReminders()
+        {
+            var tasks = await _db.Tasks.ToListAsync();
+            foreach (var task in tasks)
+            {
+                if (task.DueUtc.HasValue)
                 {
-                    _logger.LogError(ex, "Failed to send reminder for task {TaskId}", task.Id);
+                    await _messagingService.SendMessageAsync(task.UserId, $"Reminder: {task.Title} is due!");
                 }
             }
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error in ReminderJob");
-        }
-    }
-
-    private async Task ProcessTaskReminders()
-    {
-        var tasks = await _db.Tasks.ToListAsync();
-        foreach (var task in tasks)
-        {
-            if (task.DueUtc.HasValue)
-            {
-                await _wa.SendMessageAsync(task.UserId, $"Reminder: {task.Title} is due!");
-            }
-        }
-    }
 
         private async Task ProcessEventReminders(DateTime now)
         {
@@ -122,26 +131,30 @@ public class UserItem
                 .Where(e => e.StartUtc <= now.AddMinutes(30) &&
                        e.StartUtc >= now &&
                        e.Status == "Scheduled" &&
-                       e.User != null &&
-                       !string.IsNullOrEmpty(e.User.PhoneNumber))
+                       e.User != null)
                 .ToListAsync();
 
             foreach (var evt in upcomingEvents)
             {
                 try
                 {
-                    var success = await _wa.SendReminderAsync(
-                        evt.UserId, 
-                        "event", 
-                        evt.Title, 
-                        evt.StartUtc.DateTime, 
-                        $"{evt.Location} | {evt.Description}"
-                    );
+                    var message = $"📅 Event Reminder: '{evt.Title}' at {evt.StartUtc:MMM dd, yyyy HH:mm} UTC";
                     
-                    if (success)
+                    if (!string.IsNullOrEmpty(evt.Location))
+                        message += $"\n📍 Location: {evt.Location}";
+                        
+                    if (!string.IsNullOrEmpty(evt.Description))
+                        message += $"\n📝 Description: {evt.Description}";
+
+                    var result = await _messagingService.SendMessageAsync(evt.UserId, message);
+                    
+                    if (result.Success)
                     {
-                        _logger.LogInformation("Sent reminder for event {EventId} to user {UserId}", 
-                            evt.Id, evt.UserId);
+                        _logger.LogInformation("Sent reminder for event {EventId} to user {UserId}", evt.Id, evt.UserId);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Failed to send reminder for event {EventId}: {Error}", evt.Id, result.Error);
                     }
                 }
                 catch (Exception ex)

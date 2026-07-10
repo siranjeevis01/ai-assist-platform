@@ -1,6 +1,7 @@
 // Jobs/GmailPollingJob.cs
 using AiAgentBackend.Data;
 using AiAgentBackend.Services.Integrations;
+using AiAgentBackend.Services.Messaging; 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -68,10 +69,10 @@ namespace AiAgentBackend.Jobs
                                 db.Tasks.Add(task);
                                 await db.SaveChangesAsync();
 
-                                // Get WhatsApp service from the same scope
-                                var wa = scope.ServiceProvider.GetRequiredService<IWhatsAppService>();
+                                // Get messaging service from the same scope
+                                var messagingService = scope.ServiceProvider.GetRequiredService<IMessagingService>(); // Changed this line
                                 
-                                var result = await wa.SendMessageAsync( 
+                                var result = await messagingService.SendMessageAsync( // Changed this line
                                     userId, 
                                     $"Urgent email detected: '{subject}' from {from}. I created a task for you."
                                 );

@@ -1,0 +1,42 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+npm-debug.log*
+dist/
+.angular/
+.cache/
+
+# .NET
+bin/
+obj/
+publish/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-data/
+
+# Logs
+logs/
+*.log
+
+# Build artifacts
+*.nupkg
+*.snupkg
+
+# User-specific files
+appsettings.Development.json

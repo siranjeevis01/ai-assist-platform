@@ -1,0 +1,34 @@
+.integrations-page { max-width: 1000px; margin: 0 auto; }
+
+.page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;
+  .header-content { h1 { margin: 0 0 8px; font-size: 28px; color: #333; } p { margin: 0; color: #888; } }
+}
+
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(102,126,234,0.3); } &:disabled { opacity: 0.6; cursor: not-allowed; } }
+.btn-secondary { background: #f0f0f0; color: #555; &:hover { background: #e0e0e0; } }
+
+.integrations-grid { display: flex; flex-direction: column; gap: 16px; }
+
+.integration-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.integration-header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+.integration-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  .material-icons { color: white; font-size: 22px; }
+}
+.integration-info { flex: 1;
+  h3 { margin: 0 0 4px; font-size: 16px; color: #333; }
+  p { margin: 0; font-size: 13px; color: #888; }
+}
+.status { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500;
+  &.connected { color: #43e97b; .material-icons { font-size: 20px; } }
+  &.disconnected { color: #e74c3c; .material-icons { font-size: 20px; } }
+}
+.integration-actions { display: flex; gap: 12px; align-items: center; }
+
+.preference-select { display: flex; gap: 12px; align-items: center;
+  select { padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; background: white;
+    &:focus { border-color: #667eea; }
+  }
+}
+
+@media (max-width: 768px) { .integration-header { flex-wrap: wrap; } }

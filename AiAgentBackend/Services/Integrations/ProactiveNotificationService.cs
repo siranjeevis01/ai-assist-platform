@@ -3,6 +3,7 @@ using AiAgentBackend.Models;
 using AiAgentBackend.Services.Integrations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using AiAgentBackend.Services.Messaging; 
 
 namespace AiAgentBackend.Services.Integrations
 {
@@ -27,25 +28,25 @@ namespace AiAgentBackend.Services.Integrations
             _logger = logger;
         }
 
-        // FIXED: Added proper async implementation
-        private async Task<(ApplicationDbContext db, IGmailService gmail, IWhatsAppService whatsApp)> GetServicesAsync()
+        // Updated to use IMessagingService
+        private async Task<(ApplicationDbContext db, IGmailService gmail, IMessagingService messaging)> GetServicesAsync()
         {
             var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var gmail = scope.ServiceProvider.GetRequiredService<IGmailService>();
-            var whatsApp = scope.ServiceProvider.GetRequiredService<IWhatsAppService>();
+            var messaging = scope.ServiceProvider.GetRequiredService<IMessagingService>();
             
             // Ensure database connection is ready
             await db.Database.CanConnectAsync();
             
-            return (db, gmail, whatsApp);
+            return (db, gmail, messaging);
         }
 
         public async Task CheckAndSendRemindersAsync()
         {
             try
             {
-                var (db, gmail, whatsApp) = await GetServicesAsync();
+                var (db, gmail, messaging) = await GetServicesAsync();
                 
                 var now = DateTime.UtcNow;
                 var reminderThreshold = now.AddMinutes(30);
@@ -57,8 +58,7 @@ namespace AiAgentBackend.Services.Integrations
                            t.DueUtc > now &&
                            t.Status != "Done" &&
                            (t.LastReminderSentAt == null || t.LastReminderSentAt < t.DueUtc.Value.AddMinutes(-15)) &&
-                           t.User != null &&
-                           !string.IsNullOrEmpty(t.User.PhoneNumber))
+                           t.User != null)
                     .ToListAsync();
 
                 _logger.LogInformation("Found {Count} tasks due for reminders", dueTasks.Count);
@@ -71,7 +71,7 @@ namespace AiAgentBackend.Services.Integrations
                         if (!string.IsNullOrEmpty(task.Description))
                             message += $"\nDetails: {task.Description}";
 
-                        var result = await whatsApp.SendMessageAsync(task.User.PhoneNumber!, message);
+                        var result = await messaging.SendMessageAsync(task.UserId, message);
                         
                         if (result.Success)
                         {
@@ -105,7 +105,7 @@ namespace AiAgentBackend.Services.Integrations
         {
             try
             {
-                var (db, gmail, whatsApp) = await GetServicesAsync();
+                var (db, gmail, messaging) = await GetServicesAsync();
                 
                 var now = DateTime.UtcNow;
                 var reminderThreshold = now.AddMinutes(30);
@@ -115,8 +115,7 @@ namespace AiAgentBackend.Services.Integrations
                     .Where(e => e.StartUtc <= reminderThreshold &&
                            e.StartUtc > now &&
                            e.Status == "Scheduled" &&
-                           e.User != null &&
-                           !string.IsNullOrEmpty(e.User.PhoneNumber))
+                           e.User != null)
                     .ToListAsync();
 
                 _logger.LogInformation("Found {Count} events due for reminders", upcomingEvents.Count);
@@ -133,18 +132,15 @@ namespace AiAgentBackend.Services.Integrations
                         if (!string.IsNullOrEmpty(evt.Description))
                             message += $"\n📝 Description: {evt.Description}";
 
-                        if (evt.User?.PhoneNumber != null)
+                        var result = await messaging.SendMessageAsync(evt.UserId, message);
+                        
+                        if (result.Success)
                         {
-                            var result = await whatsApp.SendMessageAsync(evt.User.PhoneNumber, message);
-                            
-                            if (result.Success)
-                            {
-                                _logger.LogInformation("✅ Sent reminder for event {EventId} to user {UserId}", evt.Id, evt.UserId);
-                            }
-                            else
-                            {
-                                _logger.LogWarning("❌ Failed to send reminder for event {EventId}: {Error}", evt.Id, result.Error);
-                            }
+                            _logger.LogInformation("✅ Sent reminder for event {EventId} to user {UserId}", evt.Id, evt.UserId);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("❌ Failed to send reminder for event {EventId}: {Error}", evt.Id, result.Error);
                         }
                         
                         await Task.Delay(500); // Rate limiting
@@ -165,11 +161,11 @@ namespace AiAgentBackend.Services.Integrations
         {
             try
             {
-                var (db, gmail, whatsApp) = await GetServicesAsync();
+                var (db, gmail, messaging) = await GetServicesAsync();
                 
                 var usersWithGoogle = await db.ProviderTokens
                     .Include(t => t.User)
-                    .Where(t => t.Provider == "Google" && t.User != null && !string.IsNullOrEmpty(t.User.PhoneNumber))
+                    .Where(t => t.Provider == "Google" && t.User != null)
                     .Select(t => t.User!)
                     .Distinct()
                     .ToListAsync();
@@ -180,9 +176,6 @@ namespace AiAgentBackend.Services.Integrations
                 {
                     try
                     {
-                        if (string.IsNullOrEmpty(user.PhoneNumber))
-                            continue;
-
                         var unreadEmails = await gmail.GetUnreadEmailsAsync(user.Id, 5);
                         
                         foreach (var email in unreadEmails.Take(3))
@@ -190,7 +183,7 @@ namespace AiAgentBackend.Services.Integrations
                             var priority = email.IsImportant ? "🚨 URGENT" : "📧 New";
                             var message = $"{priority} Email:\nFrom: {email.From}\nSubject: {email.Subject}";
                             
-                            var result = await whatsApp.SendMessageAsync(user.PhoneNumber, message);
+                            var result = await messaging.SendMessageAsync(user.Id, message);
                             
                             if (result.Success)
                             {
@@ -219,7 +212,7 @@ namespace AiAgentBackend.Services.Integrations
         {
             try
             {
-                var (db, gmail, whatsApp) = await GetServicesAsync();
+                var (db, gmail, messaging) = await GetServicesAsync();
                 
                 var now = DateTime.UtcNow;
                 var warningThreshold = now.AddHours(24);
@@ -230,8 +223,7 @@ namespace AiAgentBackend.Services.Integrations
                            t.DueUtc <= warningThreshold &&
                            t.DueUtc > now &&
                            t.Status != "Done" &&
-                           t.User != null &&
-                           !string.IsNullOrEmpty(t.User.PhoneNumber))
+                           t.User != null)
                     .ToListAsync();
 
                 _logger.LogInformation("Found {Count} tasks with approaching deadlines", dueSoonTasks.Count);
@@ -245,18 +237,15 @@ namespace AiAgentBackend.Services.Integrations
                         
                         var message = $"⏰ Task deadline approaching: '{task.Title}' is due in {hoursUntilDue} hours ({task.DueUtc!.Value:MMM dd, yyyy HH:mm} UTC)";
                         
-                        if (task.User?.PhoneNumber != null)
+                        var result = await messaging.SendMessageAsync(task.UserId, message);
+                        
+                        if (result.Success)
                         {
-                            var result = await whatsApp.SendMessageAsync(task.User.PhoneNumber, message);
-                            
-                            if (result.Success)
-                            {
-                                _logger.LogInformation("✅ Sent deadline warning for task {TaskId} to user {UserId}", task.Id, task.UserId);
-                            }
-                            else
-                            {
-                                _logger.LogWarning("❌ Failed to send deadline warning for task {TaskId}: {Error}", task.Id, result.Error);
-                            }
+                            _logger.LogInformation("✅ Sent deadline warning for task {TaskId} to user {UserId}", task.Id, task.UserId);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("❌ Failed to send deadline warning for task {TaskId}: {Error}", task.Id, result.Error);
                         }
                         
                         await Task.Delay(500); // Rate limiting

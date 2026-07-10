@@ -173,13 +173,13 @@ namespace AiAgentBackend.Controllers
         }
 
         [HttpPost("refresh")]
-        public async Task<IActionResult> Refresh([FromBody] string refreshToken)
+        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest req)
         {
             try
             {
                 var tokenEntry = await _db.RefreshTokens
                     .Include(t => t.User)
-                    .FirstOrDefaultAsync(t => t.Token == refreshToken && 
+                    .FirstOrDefaultAsync(t => t.Token == req.RefreshToken && 
                                             !t.IsRevoked && 
                                             t.ExpiresAt > DateTime.UtcNow);
 
@@ -209,11 +209,11 @@ namespace AiAgentBackend.Controllers
         }
 
         [HttpPost("forgot-password")]
-        public async Task<IActionResult> ForgotPassword([FromBody] string email)
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest req)
         {
             try
             {
-                var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+                var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == req.Email);
                 if (user == null) 
                 {
                     // Don't reveal whether email exists or not
@@ -342,5 +342,15 @@ namespace AiAgentBackend.Controllers
                 return StatusCode(500, new { error = "Internal server error during logout" });
             }
         }
+    }
+
+    public class RefreshTokenRequest
+    {
+        public string RefreshToken { get; set; } = string.Empty;
+    }
+
+    public class ForgotPasswordRequest
+    {
+        public string Email { get; set; } = string.Empty;
     }
 }

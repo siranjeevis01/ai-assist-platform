@@ -1,8 +1,7 @@
-// Middleware/ErrorHandlingMiddleware.cs
+﻿// Middleware/ErrorHandlingMiddleware.cs
 using System.Net;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using OpenQA.Selenium;
 
 namespace AiAgentBackend.Middleware
 {
@@ -57,11 +56,6 @@ namespace AiAgentBackend.Middleware
                     code = HttpStatusCode.BadRequest;
                     message = "Database update failed";
                     details = "There was an error saving data to the database";
-                    break;
-                case WebDriverException:
-                    code = HttpStatusCode.ServiceUnavailable;
-                    message = "WhatsApp service temporarily unavailable";
-                    details = "The WhatsApp Web driver encountered an error";
                     break;
                 case TimeoutException:
                     code = HttpStatusCode.RequestTimeout;

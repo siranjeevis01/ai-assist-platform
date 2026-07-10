@@ -1,13 +1,27 @@
 # build artifacts
 bin/
 obj/
+publish/
+
 # user secrets
 *.user
 *.swp
 *.suo
 .vscode/
 .idea/
+
+# Environment files
 .env
 .env.*
+!.env.example
+
+# Development settings
+appsettings.Development.json
+
+# Migrations
 /migrations/
 /Migrations/
+
+# Logs
+logs/
+*.log

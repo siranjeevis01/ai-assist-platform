@@ -16,9 +16,9 @@ namespace AiAgentBackend.Data
         public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
-        public DbSet<WhatsAppSession> WhatsAppSessions => Set<WhatsAppSession>();
         public DbSet<GmailWebhook> GmailWebhooks => Set<GmailWebhook>();
         public DbSet<ConversationState> ConversationStates => Set<ConversationState>();
+        public DbSet<UserMessagingPreference> UserMessagingPreferences => Set<UserMessagingPreference>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -74,13 +74,6 @@ namespace AiAgentBackend.Data
                 entity.HasIndex(t => new { t.UserId, t.Status });
             });
             
-            // WhatsApp Session
-            modelBuilder.Entity<WhatsAppSession>(entity =>
-            {
-                entity.HasIndex(ws => ws.IsConnected);
-                entity.HasIndex(ws => ws.LastCheckedAt);
-            });
-            
             // Conversation State
             modelBuilder.Entity<ConversationState>(entity =>
             {
@@ -88,6 +81,13 @@ namespace AiAgentBackend.Data
                 entity.HasIndex(cs => cs.ExpiresAt);
                 entity.Property(cs => cs.ContextData).HasColumnType("TEXT");
             });
+
+            modelBuilder.Entity<UserMessagingPreference>(entity =>
+            {
+                entity.HasIndex(ump => new { ump.UserId, ump.Platform });
+                entity.HasIndex(ump => ump.PlatformUserId);
+                entity.HasIndex(ump => ump.PreferredPlatform);
+            });            
         }
     }
 }

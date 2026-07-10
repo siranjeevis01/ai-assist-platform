@@ -1,0 +1,19 @@
+{
+  "/api": {
+    "target": "http://localhost:5000",
+    "secure": false
+  },
+  "/hub": {
+    "target": "http://localhost:5000",
+    "ws": true,
+    "secure": false
+  },
+  "/health": {
+    "target": "http://localhost:5000",
+    "secure": false
+  },
+  "/messaging-status": {
+    "target": "http://localhost:5000",
+    "secure": false
+  }
+}

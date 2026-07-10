@@ -15,6 +15,7 @@ using Google.Apis.Auth.OAuth2.Responses;
 using Google.Apis.Auth.OAuth2.Flows;
 using System.Text.RegularExpressions;
 using AiAgentBackend.Services.Integrations;
+using AiAgentBackend.Services.Messaging;
 
 namespace AiAgentBackend.Services.Integrations
 {
@@ -881,60 +882,60 @@ namespace AiAgentBackend.Services.Integrations
         }
         #endregion
 
-        private async Task<IWhatsAppService> GetWhatsAppServiceAsync()
-        {
-            var scope = _serviceProvider.CreateScope();
-            return await Task.FromResult(scope.ServiceProvider.GetRequiredService<IWhatsAppService>());
-        }
+private Task<IMessagingService> GetMessagingServiceAsync()
+{
+    var scope = _serviceProvider.CreateScope();
+    return Task.FromResult(scope.ServiceProvider.GetRequiredService<IMessagingService>());
+}
         
         #region Automation and Processing
-        public async Task ProcessIncomingEmails(int userId)
+public async Task ProcessIncomingEmails(int userId)
+{
+    var user = await _db.Users.FindAsync(userId);
+    if (user == null)
+    {
+        _logger.LogWarning("User {UserId} not found, skipping Gmail processing", userId);
+        return;
+    }         
+       
+    var unreadEmails = await GetEmailsAsync(userId, "is:unread", 10);
+    
+    foreach (var email in unreadEmails)
+    {
+        try
         {
-            var user = await _db.Users.FindAsync(userId);
-            if (user == null || string.IsNullOrEmpty(user.PhoneNumber))
-            {
-                _logger.LogWarning("User {UserId} has no phone number, skipping Gmail processing", userId);
-                return;
-            }         
-               
-            var unreadEmails = await GetEmailsAsync(userId, "is:unread", 10);
+            var analysis = await _nlpService.ParseAsync($"{email.Subject} {email.Body}", "UTC");
             
-            foreach (var email in unreadEmails)
+            if (analysis.Confidence > 0.6)
             {
-                try
+                using var orchestratorScope = _serviceProvider.CreateScope();
+                var orchestrator = orchestratorScope.ServiceProvider.GetRequiredService<ICommandOrchestrator>();
+                var response = await orchestrator.HandleAsync(userId, $"{email.Subject} - {email.Body}", "Gmail");
+                
+                if (email.IsImportant || analysis.Confidence > 0.8)
                 {
-                    var analysis = await _nlpService.ParseAsync($"{email.Subject} {email.Body}", "UTC");
+                    // Get messaging service using proper scoping
+                    var messagingService = await GetMessagingServiceAsync();
+                    var result = await messagingService.SendMessageAsync(
+                        userId, 
+                        $"📧 Important email: {email.Subject} from {email.From}"
+                    );
                     
-                    if (analysis.Confidence > 0.6)
+                    if (result.Success)
                     {
-                        using var orchestratorScope = _serviceProvider.CreateScope();
-                        var orchestrator = orchestratorScope.ServiceProvider.GetRequiredService<ICommandOrchestrator>();
-                        var response = await orchestrator.HandleAsync(userId, $"{email.Subject} - {email.Body}", "Gmail");
-                        
-                        if (email.IsImportant || analysis.Confidence > 0.8)
-                        {
-                            // Get WhatsApp service using proper scoping
-                            var whatsAppService = await GetWhatsAppServiceAsync();
-                            var result = await whatsAppService.SendMessageAsync(
-                                user.PhoneNumber, 
-                                $"📧 Important email: {email.Subject} from {email.From}"
-                            );
-                            
-                            if (result.Success)
-                            {
-                                _logger.LogInformation("Sent WhatsApp alert for important email to user {UserId}", userId);
-                            }
-                        }
+                        _logger.LogInformation("Sent alert for important email to user {UserId}", userId);
                     }
-
-                    await MarkAsReadAsync(userId, email.Id);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to process email {EmailId}", email.Id);
                 }
             }
+
+            await MarkAsReadAsync(userId, email.Id);
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to process email {EmailId}", email.Id);
+        }
+    }
+}
 
         public async Task ProcessAllUserEmails()
         {

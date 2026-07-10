@@ -1,0 +1,60 @@
+services:
+  - type: web
+    name: ai-agent-backend
+    env: docker
+    dockerfilePath: ./AiAgentBackend/Dockerfile
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://*:5000
+      - key: CORS_ORIGINS
+        value: https://aiagent-siranjeevis01.web.app,https://aiagent-siranjeevis01.firebaseapp.com
+      - key: ConnectionStrings__DefaultConnection
+        fromDatabase:
+          name: ai-agent-db
+          property: connectionString
+      - key: AI_AGENT_BASE_URL
+        value: https://ai-agent-backend.onrender.com
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: Gemini__ApiKey
+        sync: false
+      - key: Google__ClientId
+        sync: false
+      - key: Google__ClientSecret
+        sync: false
+      - key: Messaging__Telegram__BotToken
+        sync: false
+      - key: Messaging__WhatsApp__AccessToken
+        sync: false
+      - key: Messaging__WhatsApp__VerifyToken
+        generateValue: true
+      - key: Messaging__WhatsApp__PhoneNumberId
+        sync: false
+      - key: Trello__ApiKey
+        sync: false
+      - key: Trello__ApiSecret
+        sync: false
+      - key: Trello__AccessToken
+        sync: false
+    healthCheckPath: /health/real-time
+    plan: free
+    autoDeploy: true
+
+  - type: web
+    name: ai-agent-frontend
+    env: docker
+    dockerfilePath: ./ai-agent-frontend/Dockerfile
+    buildArgs:
+      API_URL: https://ai-agent-backend.onrender.com
+    envVars:
+      - key: API_URL
+        value: https://ai-agent-backend.onrender.com
+    plan: free
+    autoDeploy: true
+
+databases:
+  - name: ai-agent-db
+    databaseName: AiAgentDb
+    plan: free

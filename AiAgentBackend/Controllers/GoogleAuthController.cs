@@ -19,13 +19,18 @@ namespace AiAgentBackend.Controllers
         private readonly GoogleOptions _options;
         private readonly ApplicationDbContext _db;
         private readonly ILogger<GoogleAuthController> _logger;
+        private readonly IConfiguration _configuration;
 
-        public GoogleAuthController(IOptions<GoogleOptions> options, ApplicationDbContext db,
-                                  ILogger<GoogleAuthController> logger)
+        public GoogleAuthController(
+            IOptions<GoogleOptions> options, 
+            ApplicationDbContext db,
+            ILogger<GoogleAuthController> logger,
+            IConfiguration configuration)
         {
             _options = options.Value;
             _db = db;
             _logger = logger;
+            _configuration = configuration;
         }
 
         private string BuildGoogleAuthUrl(int userId)
@@ -39,9 +44,16 @@ namespace AiAgentBackend.Controllers
                 "https://www.googleapis.com/auth/gmail.compose"
             };
 
+            // Use the configured redirect URI
+            var redirectUri = _options.RedirectUri;
+            if (string.IsNullOrEmpty(redirectUri))
+            {
+                redirectUri = _configuration["Google:RedirectUri"] ?? "http://localhost:5000/api/google/callback";
+            }
+
             var url = $"https://accounts.google.com/o/oauth2/v2/auth" +
-                      $"?client_id={_options.ClientId}" +
-                      $"&redirect_uri={Uri.EscapeDataString(_options.RedirectUri)}" +
+                      $"?client_id={Uri.EscapeDataString(_options.ClientId)}" +
+                      $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
                       $"&response_type=code" +
                       $"&scope={Uri.EscapeDataString(string.Join(" ", scopes))}" +
                       $"&access_type=offline" +
@@ -51,7 +63,6 @@ namespace AiAgentBackend.Controllers
             return url;
         }
 
-        // --- Google Connect ---
         [HttpGet("connect")]
         [Authorize]
         public IActionResult Connect()
@@ -75,8 +86,6 @@ namespace AiAgentBackend.Controllers
             }
         }
 
-        // NEW: Return the Google OAuth URL as JSON (for fetch + Authorization header usage)
-        // Frontend will call this with the Authorization header set.
         [HttpGet("connect-url")]
         [Authorize]
         public IActionResult ConnectUrl()
@@ -100,17 +109,23 @@ namespace AiAgentBackend.Controllers
             }
         }
 
-        // --- Google Callback ---
         [HttpGet("callback")]
         public async Task<IActionResult> Callback([FromQuery] string code, [FromQuery] string state)
         {
             try
             {
-                if (string.IsNullOrEmpty(code)) return BadRequest(new { error = "Missing authorization code" });
-                if (string.IsNullOrEmpty(state)) return BadRequest(new { error = "Missing state parameter" });
-                if (!int.TryParse(state, out int userId)) return BadRequest(new { error = "Invalid state parameter" });
+                if (string.IsNullOrEmpty(code)) 
+                    return BadRequest(new { error = "Missing authorization code" });
+                if (string.IsNullOrEmpty(state)) 
+                    return BadRequest(new { error = "Missing state parameter" });
+                if (!int.TryParse(state, out int userId)) 
+                    return BadRequest(new { error = "Invalid state parameter" });
 
-                // Remove the duplicate declaration: var userId = int.Parse(state);
+                var redirectUri = _options.RedirectUri;
+                if (string.IsNullOrEmpty(redirectUri))
+                {
+                    redirectUri = _configuration["Google:RedirectUri"] ?? "http://localhost:5000/api/google/callback";
+                }
 
                 using var http = new HttpClient();
                 var content = new FormUrlEncodedContent(new Dictionary<string, string>
@@ -118,7 +133,7 @@ namespace AiAgentBackend.Controllers
                     {"code", code},
                     {"client_id", _options.ClientId},
                     {"client_secret", _options.ClientSecret},
-                    {"redirect_uri", _options.RedirectUri},
+                    {"redirect_uri", redirectUri},
                     {"grant_type", "authorization_code"}
                 });
 
@@ -153,11 +168,15 @@ namespace AiAgentBackend.Controllers
 
                 if (providerToken == null)
                 {
-                    providerToken = new ProviderToken { UserId = userId, Provider = "Google" };
+                    providerToken = new ProviderToken 
+                    { 
+                        UserId = userId, 
+                        Provider = "Google",
+                        CreatedAt = DateTime.UtcNow
+                    };
                     _db.ProviderTokens.Add(providerToken);
                 }
 
-                // Now tokenResponse is defined in this scope
                 providerToken.EncryptedAccessToken = tokenResponse.AccessToken;
                 providerToken.RefreshToken = tokenResponse.RefreshToken ?? providerToken.RefreshToken;
                 providerToken.Scope = tokenResponse.Scope;
@@ -176,18 +195,16 @@ namespace AiAgentBackend.Controllers
 
                 _logger.LogInformation("Google connected successfully for user {UserId}", userId);
 
-                // Redirect back to dashboard
-                // return Redirect($"/dashboard?googleConnected=true");
-                return Redirect($"/dashboard.html?googleConnected=true");
+                // Redirect to Angular frontend
+                return Redirect($"/dashboard?googleConnected=true&message=Google%20integration%20successful");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in Google OAuth callback");
-                return StatusCode(500, new { error = "Internal server error" });
+                return Redirect($"/dashboard?googleConnected=false&error=OAuth%20failed");
             }
         }
 
-        // --- Disconnect Google ---
         [HttpDelete("disconnect")]
         [Authorize]
         public async Task<IActionResult> Disconnect()
@@ -195,7 +212,8 @@ namespace AiAgentBackend.Controllers
             try
             {
                 var userIdClaim = User.FindFirst("uid")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim)) return Unauthorized();
+                if (string.IsNullOrEmpty(userIdClaim)) 
+                    return Unauthorized();
                 var userId = int.Parse(userIdClaim);
 
                 var tokens = await _db.ProviderTokens
@@ -226,7 +244,6 @@ namespace AiAgentBackend.Controllers
             }
         }
 
-        // --- Check Google Status ---
         [HttpGet("status")]
         [Authorize]
         public async Task<IActionResult> Status()
@@ -234,13 +251,15 @@ namespace AiAgentBackend.Controllers
             try
             {
                 var userIdClaim = User.FindFirst("uid")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim)) return Unauthorized();
+                if (string.IsNullOrEmpty(userIdClaim)) 
+                    return Unauthorized();
                 var userId = int.Parse(userIdClaim);
 
                 var token = await _db.ProviderTokens
                     .FirstOrDefaultAsync(t => t.UserId == userId && t.Provider == "Google");
 
-                if (token == null) return Ok(new { connected = false });
+                if (token == null) 
+                    return Ok(new { connected = false });
 
                 var isExpired = token.ExpiresAt.HasValue && token.ExpiresAt <= DateTime.UtcNow;
 

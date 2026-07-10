@@ -1,4 +1,4 @@
-// Models/User.cs
+﻿// Models/User.cs
 using System.ComponentModel.DataAnnotations;
 
 namespace AiAgentBackend.Models
@@ -27,7 +27,7 @@ namespace AiAgentBackend.Models
         [Phone, MaxLength(100)]
         public string? PhoneNumber { get; set; }
 
-        [MaxLength(10)]
+        [MaxLength(128)]
         public string? PasswordResetToken { get; set; }
         
         public DateTime? PasswordResetExpiry { get; set; }

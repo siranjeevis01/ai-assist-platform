@@ -8,6 +8,7 @@ using AiAgentBackend.Utils;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using AiAgentBackend.Services.Messaging; // Add this using
 
 namespace AiAgentBackend.Services.Orchestration
 {
@@ -27,7 +28,7 @@ namespace AiAgentBackend.Services.Orchestration
         private readonly IGoogleCalendarService _cal;
         private readonly ITrelloService _trello;
         private readonly IGmailService _gmail;
-        private readonly IWhatsAppService _wa;
+        private readonly IMessagingService _messagingService; // Changed from IWhatsAppService
         private readonly IConversationStateService _conversationStateService;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<CommandOrchestrator> _logger;
@@ -40,7 +41,7 @@ namespace AiAgentBackend.Services.Orchestration
             IGmailService gmail,
             IHubContext<UpdatesHub> hub,
             ILogger<CommandOrchestrator> logger,
-            IWhatsAppService wa,
+            IMessagingService messagingService, // Updated parameter
             IConversationStateService conversationStateService,
             IServiceScopeFactory scopeFactory)
         {
@@ -51,7 +52,7 @@ namespace AiAgentBackend.Services.Orchestration
             _gmail = gmail;
             _hub = hub;
             _logger = logger;
-            _wa = wa;
+            _messagingService = messagingService;
             _conversationStateService = conversationStateService;
             _scopeFactory = scopeFactory;
         }
@@ -61,7 +62,7 @@ namespace AiAgentBackend.Services.Orchestration
             using var scope = _scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var nlp = scope.ServiceProvider.GetRequiredService<INlpService>();
-            var whatsAppService = scope.ServiceProvider.GetRequiredService<IWhatsAppService>(); // Renamed variable
+            var messagingService = scope.ServiceProvider.GetRequiredService<IMessagingService>(); // Updated variable
             var hub = scope.ServiceProvider.GetRequiredService<IHubContext<UpdatesHub>>();
             
             try
@@ -100,7 +101,7 @@ namespace AiAgentBackend.Services.Orchestration
                 await db.SaveChangesAsync();
 
                 // Handle based on intent
-                return parsed.Intent switch
+                var response = parsed.Intent switch
                 {
                     "CreateEvent" => await HandleCalendarCommandAsync(userId, parsed, source),
                     "CreateTask" => await HandleTaskCommandAsync(userId, parsed, source),
@@ -112,14 +113,22 @@ namespace AiAgentBackend.Services.Orchestration
                     "EmailAction" => await HandleEmailCommandAsync(userId, parsed, source),
                     _ => await HandleFallbackCommandAsync(userId, cleanText, source)
                 };
+
+                // Store conversation context for multi-turn memory
+                if (nlp is IntelligentNlpService intelligentNlp)
+                {
+                    intelligentNlp.AddConversationContext(userId, messageText, response);
+                }
+
+                return response;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error processing command");
                 try 
                 { 
-                    var errorWhatsAppService = scope.ServiceProvider.GetRequiredService<IWhatsAppService>(); // Renamed variable
-                    await errorWhatsAppService.SendMessageAsync(userId, $"Error processing command: {ex.Message}"); 
+                    var errorMessagingService = scope.ServiceProvider.GetRequiredService<IMessagingService>(); // Updated variable
+                    await errorMessagingService.SendMessageAsync(userId, $"Error processing command: {ex.Message}"); 
                 } 
                 catch { }
                 return $"Failed to process command: {ex.Message}";
@@ -131,7 +140,7 @@ namespace AiAgentBackend.Services.Orchestration
             using var scope = _scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var calendar = scope.ServiceProvider.GetRequiredService<IGoogleCalendarService>();
-            var whatsAppService = scope.ServiceProvider.GetRequiredService<IWhatsAppService>(); // Renamed variable
+            var messagingService = scope.ServiceProvider.GetRequiredService<IMessagingService>(); // Updated variable
             var hub = scope.ServiceProvider.GetRequiredService<IHubContext<UpdatesHub>>();
 
             try
@@ -212,7 +221,7 @@ namespace AiAgentBackend.Services.Orchestration
                 if (!string.IsNullOrEmpty(externalId))
                     message += " ✅ Synced with Google Calendar.";
                     
-                await whatsAppService.SendQuickActionsAsync(userId, message, new[] { "Confirm", "Reschedule", "Cancel" });
+                await messagingService.SendQuickActionsAsync(userId, message, new[] { "Confirm", "Reschedule", "Cancel" });
 
                 // Notify via SignalR
                 await hub.Clients.User(userId.ToString()).SendAsync("ReceiveUpdate", new
@@ -335,110 +344,110 @@ public Task<string> HandleFallbackCommandAsync(int userId, string cleanText, str
 }
 
         // Keep the existing protected methods but ensure they use scoped services properly
-        protected virtual async Task<string> HandleCreateEvent(int userId, NlpResult parsed, Preference pref, string source)
+protected virtual async Task<string> HandleCreateEvent(int userId, NlpResult parsed, Preference pref, string source)
+{
+    using var scope = _scopeFactory.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var calendar = scope.ServiceProvider.GetRequiredService<IGoogleCalendarService>();
+    var messagingService = scope.ServiceProvider.GetRequiredService<IMessagingService>(); // Changed this line
+    var hub = scope.ServiceProvider.GetRequiredService<IHubContext<UpdatesHub>>();
+
+    try
+    {
+        var title = parsed.Entities.GetValueOrDefault("title") ?? "Meeting";
+        var location = parsed.Entities.GetValueOrDefault("location", "");
+        
+        // Parse datetime
+        DateTime start;
+        if (parsed.Entities.TryGetValue("datetime", out var dtRaw) && DateTime.TryParse(dtRaw, out var dt))
+            start = dt.ToUniversalTime();
+        else
+            start = DateTime.UtcNow.AddHours(1);
+
+        // Parse duration
+        var durationMinutes = parsed.Entities.TryGetValue("duration_minutes", out var dstr) && 
+                            int.TryParse(dstr, out var d) ? d : pref.DefaultDurationMinutes;
+        var end = start.AddMinutes(durationMinutes);
+
+        // Parse attendees
+        var attendees = new List<string>();
+        if (parsed.Entities.TryGetValue("attendees", out var attendeeStr))
         {
-            using var scope = _scopeFactory.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var calendar = scope.ServiceProvider.GetRequiredService<IGoogleCalendarService>();
-            var whatsAppService = scope.ServiceProvider.GetRequiredService<IWhatsAppService>();
-            var hub = scope.ServiceProvider.GetRequiredService<IHubContext<UpdatesHub>>();
+            attendees = attendeeStr.Split(',').Select(a => a.Trim()).ToList();
+        }
 
-            try
-            {
-                var title = parsed.Entities.GetValueOrDefault("title") ?? "Meeting";
-                var location = parsed.Entities.GetValueOrDefault("location", "");
+        var evt = new Event
+        {
+            UserId = userId,
+            Title = title,
+            Description = parsed.Entities.GetValueOrDefault("description", "") ?? "",
+            StartUtc = new DateTimeOffset(start),
+            EndUtc = new DateTimeOffset(end),
+            Location = location,
+            Status = "Scheduled",
+            Source = source,
+            AttendeesJson = JsonSerializer.Serialize(attendees)
+        };
+
+        // Save to DB first
+        db.Events.Add(evt);
+        await db.SaveChangesAsync();
+
+        // Try to create in Google Calendar if connected
+        string? externalId = null;
+        try
+        {
+            var googleToken = await db.ProviderTokens
+                .FirstOrDefaultAsync(t => t.UserId == userId && t.Provider == "Google");
                 
-                // Parse datetime
-                DateTime start;
-                if (parsed.Entities.TryGetValue("datetime", out var dtRaw) && DateTime.TryParse(dtRaw, out var dt))
-                    start = dt.ToUniversalTime();
-                else
-                    start = DateTime.UtcNow.AddHours(1);
-
-                // Parse duration
-                var durationMinutes = parsed.Entities.TryGetValue("duration_minutes", out var dstr) && 
-                                    int.TryParse(dstr, out var d) ? d : pref.DefaultDurationMinutes;
-                var end = start.AddMinutes(durationMinutes);
-
-                // Parse attendees
-                var attendees = new List<string>();
-                if (parsed.Entities.TryGetValue("attendees", out var attendeeStr))
-                {
-                    attendees = attendeeStr.Split(',').Select(a => a.Trim()).ToList();
-                }
-
-                var evt = new Event
-                {
-                    UserId = userId,
-                    Title = title,
-                    Description = parsed.Entities.GetValueOrDefault("description", "") ?? "",
-                    StartUtc = new DateTimeOffset(start),
-                    EndUtc = new DateTimeOffset(end),
-                    Location = location,
-                    Status = "Scheduled",
-                    Source = source,
-                    AttendeesJson = JsonSerializer.Serialize(attendees)
-                };
-
-                // Save to DB first
-                db.Events.Add(evt);
-                await db.SaveChangesAsync();
-
-                // Try to create in Google Calendar if connected
-                string? externalId = null;
-                try
-                {
-                    var googleToken = await db.ProviderTokens
-                        .FirstOrDefaultAsync(t => t.UserId == userId && t.Provider == "Google");
-                        
-                    if (googleToken != null)
-                    {
-                        var createdEvent = await calendar.CreateEventAsync(userId, evt);
-                        if (createdEvent != null)
-                        {
-                            externalId = createdEvent.ExternalId;
-                            evt.ExternalId = externalId;
-                            db.Events.Update(evt);
-                            await db.SaveChangesAsync();
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Google Calendar integration failed");
-                }
-
-                // Send confirmation with quick actions
-                var localTime = start.ToLocalTime();
-                var message = $"Event '{evt.Title}' scheduled for {localTime:yyyy-MM-dd HH:mm}.";
-                
-                if (!string.IsNullOrEmpty(externalId))
-                    message += " ✅ Synced with Google Calendar.";
-                    
-                await whatsAppService.SendQuickActionsAsync(userId, message, new[] { "Confirm", "Reschedule", "Cancel" });
-
-                // Notify via SignalR
-                await hub.Clients.User(userId.ToString()).SendAsync("ReceiveUpdate", new
-                {
-                    Type = "EventCreated",
-                    Event = evt
-                });
-
-                return $"Event '{evt.Title}' created successfully.";
-            }
-            catch (Exception ex)
+            if (googleToken != null)
             {
-                _logger.LogError(ex, "Error creating event");
-                return "Sorry, I encountered an error scheduling your event. Please try again.";
+                var createdEvent = await calendar.CreateEventAsync(userId, evt);
+                if (createdEvent != null)
+                {
+                    externalId = createdEvent.ExternalId;
+                    evt.ExternalId = externalId;
+                    db.Events.Update(evt);
+                    await db.SaveChangesAsync();
+                }
             }
         }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Google Calendar integration failed");
+        }
+
+        // Send confirmation with quick actions
+        var localTime = start.ToLocalTime();
+        var message = $"Event '{evt.Title}' scheduled for {localTime:yyyy-MM-dd HH:mm}.";
+        
+        if (!string.IsNullOrEmpty(externalId))
+            message += " ✅ Synced with Google Calendar.";
+            
+        await messagingService.SendQuickActionsAsync(userId, message, new[] { "Confirm", "Reschedule", "Cancel" }); // Changed this line
+
+        // Notify via SignalR
+        await hub.Clients.User(userId.ToString()).SendAsync("ReceiveUpdate", new
+        {
+            Type = "EventCreated",
+            Event = evt
+        });
+
+        return $"Event '{evt.Title}' created successfully.";
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error creating event");
+        return "Sorry, I encountered an error scheduling your event. Please try again.";
+    }
+}
 
         protected virtual async Task<string> HandleCreateTask(int userId, NlpResult parsed, Preference pref, string source)
         {
             using var scope = _scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var trello = scope.ServiceProvider.GetRequiredService<ITrelloService>();
-            var whatsAppService = scope.ServiceProvider.GetRequiredService<IWhatsAppService>();
+            var messagingService = scope.ServiceProvider.GetRequiredService<IMessagingService>(); // Updated
             var hub = scope.ServiceProvider.GetRequiredService<IHubContext<UpdatesHub>>();
 
             try
@@ -506,7 +515,7 @@ public Task<string> HandleFallbackCommandAsync(int userId, string cleanText, str
                 if (!string.IsNullOrEmpty(externalId))
                     message += " ✅ Synced with Trello.";
                     
-                await whatsAppService.SendQuickActionsAsync(userId, message, new[] { "Complete", "Snooze", "Edit" });
+                await messagingService.SendQuickActionsAsync(userId, message, new[] { "Complete", "Snooze", "Edit" });
 
                 await hub.Clients.User(userId.ToString()).SendAsync("ReceiveUpdate", new
                 {
@@ -575,7 +584,7 @@ public Task<string> HandleFallbackCommandAsync(int userId, string cleanText, str
 
                 await _db.SaveChangesAsync();
 
-                await _wa.SendMessageAsync(userId, $"Task '{taskToUpdate.Title}' updated from {oldStatus} to {status}.");
+                await _messagingService.SendMessageAsync(userId, $"Task '{taskToUpdate.Title}' updated from {oldStatus} to {status}.");
                 
                 await _hub.Clients.User(userId.ToString()).SendAsync("ReceiveUpdate", new
                 {
@@ -806,7 +815,7 @@ public Task<string> HandleFallbackCommandAsync(int userId, string cleanText, str
                     await _conversationStateService.ClearStateAsync(userId);
                     
                     // Send confirmation with quick actions
-                    await _wa.SendQuickActionsAsync(userId, $"Event '{evt.Title}' created successfully!", 
+                    await _messagingService.SendQuickActionsAsync(userId, $"Event '{evt.Title}' created successfully!", 
                         new[] { "Confirm", "Reschedule", "Cancel" });
                     
                     return $"Event '{evt.Title}' has been created successfully!";
@@ -881,7 +890,7 @@ public Task<string> HandleFallbackCommandAsync(int userId, string cleanText, str
                 var task = await _db.Tasks.FindAsync(taskId);
                 if (task == null || task.Status == "Done") return;
 
-                await _wa.SendMessageAsync(userId, $"🔔 Reminder: {task.Title}" +
+                await _messagingService.SendMessageAsync(userId, $"🔔 Reminder: {task.Title}" + // Updated
                     (task.Description != null ? $"\n{task.Description}" : ""));
             }
             catch (Exception ex)
@@ -895,7 +904,7 @@ public Task<string> HandleFallbackCommandAsync(int userId, string cleanText, str
             try
             {
                 _logger.LogInformation("User {UserId} responded to event confirmation: {Option}", userId, selectedOption);
-                await _wa.SendMessageAsync(userId, $"Event confirmation recorded: {selectedOption}");
+                await _messagingService.SendMessageAsync(userId, $"Event confirmation recorded: {selectedOption}"); // Updated
                 return true;
             }
             catch (Exception ex)
@@ -910,7 +919,7 @@ public Task<string> HandleFallbackCommandAsync(int userId, string cleanText, str
             try
             {
                 _logger.LogInformation("User {UserId} responded to task confirmation: {Option}", userId, selectedOption);
-                await _wa.SendMessageAsync(userId, $"Task confirmation recorded: {selectedOption}");
+                await _messagingService.SendMessageAsync(userId, $"Task confirmation recorded: {selectedOption}"); // Updated
                 return true;
             }
             catch (Exception ex)
@@ -925,7 +934,7 @@ public Task<string> HandleFallbackCommandAsync(int userId, string cleanText, str
             try
             {
                 _logger.LogInformation("User {UserId} responded to email action: {Option}", userId, selectedOption);
-                await _wa.SendMessageAsync(userId, $"Email action recorded: {selectedOption}");
+                await _messagingService.SendMessageAsync(userId, $"Email action recorded: {selectedOption}"); // Updated
                 return true;
             }
             catch (Exception ex)
