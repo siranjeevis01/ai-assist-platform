@@ -23,7 +23,7 @@ services:
       - key: Google__ClientId
         value: 793515487928-mgphcrceiimfukhgf6429h0l6ophflef.apps.googleusercontent.com
       - key: Google__ClientSecret
-        sync: false
+        value: ""
       - key: Messaging__Telegram__Enabled
         value: "true"
       - key: Messaging__Telegram__BotToken
@@ -37,9 +37,9 @@ services:
       - key: Trello__ApiSecret
         value: 74813efaef01881a16802b46da51ec1dd4b24c2a9d44aad98acd44530b68d862
       - key: Trello__AccessToken
-        sync: false
+        value: ""
       - key: OpenAI__ApiKey
-        sync: false
+        value: ""
       - key: OpenAI__Model
         value: gpt-4o-mini
       - key: Smtp__Host
@@ -49,7 +49,7 @@ services:
       - key: Smtp__Username
         value: siranjeevicad01@gmail.com
       - key: Smtp__Password
-        sync: false
+        value: ""
       - key: Smtp__EnableSsl
         value: "true"
     healthCheckPath: /health/real-time
