@@ -6,9 +6,9 @@ EXPOSE 5001
 
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
-COPY ["AiAgentBackend.csproj", "."]
+COPY ["AiAgentBackend/AiAgentBackend.csproj", "."]
 RUN dotnet restore "AiAgentBackend.csproj"
-COPY . .
+COPY AiAgentBackend/ .
 RUN dotnet build "AiAgentBackend.csproj" -c Release -o /app/build
 
 FROM build AS publish
