@@ -47,7 +47,10 @@ builder.Host.UseSerilog((context, configuration) =>
 
 // Get environment-specific connection string
 var connectionString = EnvironmentHelper.GetConnectionString(builder.Configuration);
-var hasDatabase = !string.IsNullOrWhiteSpace(connectionString) && !connectionString.Contains("127.0.0.1");
+var hasDatabase = !string.IsNullOrWhiteSpace(connectionString) 
+    && !connectionString.Contains("127.0.0.1") 
+    && !connectionString.Contains("example.com")
+    && !connectionString.Contains("localhost");
 
 if (hasDatabase)
 {
@@ -719,11 +722,16 @@ public static class EnvironmentHelper
     public static string GetConnectionString(IConfiguration configuration)
     {
         var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+        
+        // Check for env var override first (works for both dev and prod)
+        var envConnStr = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+        if (!string.IsNullOrWhiteSpace(envConnStr)) return envConnStr;
+        
         return env switch
         {
             "Production" => configuration.GetConnectionString("ProductionConnection") 
                          ?? configuration.GetConnectionString("DefaultConnection")
-                         ?? "Server=127.0.0.1;Port=3306;Database=AiAgentDb;User=root;Password=;",
+                         ?? "",
             _ => configuration.GetConnectionString("DefaultConnection")
                          ?? "Server=127.0.0.1;Port=3306;Database=AiAgentDb;User=root;Password=;"
         };
