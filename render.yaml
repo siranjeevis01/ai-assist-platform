@@ -9,7 +9,7 @@ services:
       - key: ASPNETCORE_URLS
         value: http://*:5000
       - key: CORS_ORIGINS
-        value: https://ai-agent-frontend.onrender.com,https://aiagent-siranjeevis01.web.app,https://aiagent-siranjeevis01.firebaseapp.com
+        value: https://ai-agent-frontend-46u3.onrender.com,https://aiagent-siranjeevis01.web.app,https://aiagent-siranjeevis01.firebaseapp.com
       - key: AI_AGENT_BASE_URL
         value: https://ai-agent-backend-ko2p.onrender.com
       - key: Gemini__ApiKey
