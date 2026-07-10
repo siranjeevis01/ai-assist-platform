@@ -41,12 +41,3 @@ services:
     healthCheckPath: /health/real-time
     plan: free
     autoDeploy: true
-
-  - type: web
-    name: ai-agent-frontend
-    env: docker
-    dockerfilePath: ./ai-agent-frontend/Dockerfile
-    buildArgs:
-      API_URL: https://ai-agent-backend-ko2p.onrender.com
-    plan: free
-    autoDeploy: true
