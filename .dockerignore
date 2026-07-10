@@ -7,3 +7,4 @@
 AiAgentBackend/.env
 ai-agent-frontend/node_modules/
 ai-agent-frontend/.angular/
+ai-agent-frontend/dist/

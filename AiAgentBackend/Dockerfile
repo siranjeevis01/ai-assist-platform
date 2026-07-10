@@ -9,14 +9,11 @@ WORKDIR /src
 COPY ["AiAgentBackend/AiAgentBackend.csproj", "."]
 RUN dotnet restore "AiAgentBackend.csproj"
 COPY AiAgentBackend/ .
-RUN dotnet build "AiAgentBackend.csproj" -c Release -o /app/build
-
-FROM build AS publish
 RUN dotnet publish "AiAgentBackend.csproj" -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=build /app/publish .
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV ASPNETCORE_URLS=http://*:5000
 ENTRYPOINT ["dotnet", "AiAgentBackend.dll"]

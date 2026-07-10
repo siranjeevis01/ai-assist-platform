@@ -9,9 +9,9 @@ services:
       - key: ASPNETCORE_URLS
         value: http://*:5000
       - key: CORS_ORIGINS
-        value: https://aiagent-siranjeevis01.web.app,https://aiagent-siranjeevis01.firebaseapp.com
+        value: https://ai-agent-frontend.onrender.com,https://aiagent-siranjeevis01.web.app,https://aiagent-siranjeevis01.firebaseapp.com
       - key: AI_AGENT_BASE_URL
-        value: https://ai-agent-backend.onrender.com
+        value: https://ai-agent-backend-ko2p.onrender.com
       - key: Gemini__ApiKey
         value: AQ.Ab8RN6JW_IVU-HLk5Xnbl05w1bMIRzekn4E0PbYkF95z6JG5oQ
       - key: Google__ClientId
@@ -39,5 +39,14 @@ services:
       - key: Smtp__EnableSsl
         value: "true"
     healthCheckPath: /health/real-time
+    plan: free
+    autoDeploy: true
+
+  - type: web
+    name: ai-agent-frontend
+    env: docker
+    dockerfilePath: ./ai-agent-frontend/Dockerfile
+    buildArgs:
+      API_URL: https://ai-agent-backend-ko2p.onrender.com
     plan: free
     autoDeploy: true
