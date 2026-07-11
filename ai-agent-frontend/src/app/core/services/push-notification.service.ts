@@ -44,7 +44,7 @@ export class PushNotificationService {
   async registerToken(): Promise<void> {
     if (!this.messaging) return;
     try {
-      const token = await getToken(this.messaging, { vapidKey: 'YOUR_VAPID_KEY' });
+      const token = await getToken(this.messaging, { vapidKey: 'BP5gfhLL6vb0VPzITQ13O2cdp4sGq9np3cxUDTRYopAQxKucH-yK_x1I2JOTRzGOFhNX5SFplKVqtJrzgyFzWOY' });
       if (token) {
         this.api.registerDeviceToken(token, 'web').subscribe();
       }
