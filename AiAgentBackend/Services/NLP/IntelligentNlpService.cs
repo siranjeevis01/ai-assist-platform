@@ -1,6 +1,9 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using AiAgentBackend.Data;
+using AiAgentBackend.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -15,13 +18,13 @@ namespace AiAgentBackend.Services.NLP
         private readonly NlpService _fallbackParser;
         private readonly string _openAIApiKey;
         private readonly string _openAIModel;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        // Conversation context cache (per-user recent context)
-        private static readonly Dictionary<int, List<ConversationContext>> _conversationHistory = new();
-        private static readonly object _historyLock = new();
-        private const int MaxHistoryPerUser = 10;
-
-        public IntelligentNlpService(ILogger<IntelligentNlpService> logger, IConfiguration config, HttpClient httpClient)
+        public IntelligentNlpService(
+            ILogger<IntelligentNlpService> logger,
+            IConfiguration config,
+            HttpClient httpClient,
+            IServiceScopeFactory scopeFactory)
         {
             _logger = logger;
             _httpClient = httpClient;
@@ -29,6 +32,7 @@ namespace AiAgentBackend.Services.NLP
             _openAIApiKey = config["OpenAI:ApiKey"] ?? "";
             _openAIModel = config["OpenAI:Model"] ?? "gpt-4o-mini";
             _fallbackParser = new NlpService(NullLogger<NlpService>.Instance, config);
+            _scopeFactory = scopeFactory;
         }
 
         public async Task<NlpResult> ParseAsync(string text, string timezone)
@@ -77,40 +81,74 @@ namespace AiAgentBackend.Services.NLP
 
         public void AddConversationContext(int userId, string userMessage, string botResponse)
         {
-            lock (_historyLock)
+            // Persist to DB asynchronously in background (fire-and-forget)
+            _ = Task.Run(async () =>
             {
-                if (!_conversationHistory.ContainsKey(userId))
-                    _conversationHistory[userId] = new List<ConversationContext>();
-
-                _conversationHistory[userId].Add(new ConversationContext
+                try
                 {
-                    UserMessage = userMessage,
-                    BotResponse = botResponse,
-                    Timestamp = DateTime.UtcNow
-                });
+                    using var scope = _scopeFactory.CreateScope();
+                    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-                // Keep only last N messages per user
-                if (_conversationHistory[userId].Count > MaxHistoryPerUser)
-                    _conversationHistory[userId] = _conversationHistory[userId].TakeLast(MaxHistoryPerUser).ToList();
-            }
+                    var history = new ConversationHistory
+                    {
+                        UserId = userId,
+                        UserMessage = userMessage,
+                        BotResponse = botResponse,
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    db.ConversationHistory.Add(history);
+                    await db.SaveChangesAsync();
+
+                    // Cleanup old entries (keep last 50 per user)
+                    var cutoff = DateTime.UtcNow.AddDays(-7);
+                    var oldEntries = await db.ConversationHistory
+                        .Where(ch => ch.UserId == userId && ch.CreatedAt < cutoff)
+                        .ToListAsync();
+
+                    if (oldEntries.Count > 50)
+                    {
+                        var toRemove = oldEntries.OrderBy(ch => ch.CreatedAt).Take(oldEntries.Count - 50);
+                        db.ConversationHistory.RemoveRange(toRemove);
+                        await db.SaveChangesAsync();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to persist conversation history for user {UserId}", userId);
+                }
+            });
         }
 
-        private string GetConversationContext(int userId)
+        private async Task<string> GetConversationContext(int userId)
         {
-            lock (_historyLock)
+            try
             {
-                if (!_conversationHistory.ContainsKey(userId) || !_conversationHistory[userId].Any())
+                using var scope = _scopeFactory.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+                var recent = await db.ConversationHistory
+                    .Where(ch => ch.UserId == userId)
+                    .OrderByDescending(ch => ch.CreatedAt)
+                    .Take(5)
+                    .ToListAsync();
+
+                if (!recent.Any())
                     return "";
 
-                var recent = _conversationHistory[userId].TakeLast(5);
                 var context = new StringBuilder();
                 context.AppendLine("Recent conversation context:");
-                foreach (var msg in recent)
+                foreach (var msg in recent.OrderByDescending(ch => ch.CreatedAt))
                 {
                     context.AppendLine($"User: {msg.UserMessage}");
                     context.AppendLine($"Assistant: {msg.BotResponse}");
                 }
                 return context.ToString();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to load conversation history for user {UserId}", userId);
+                return "";
             }
         }
 
@@ -121,6 +159,9 @@ namespace AiAgentBackend.Services.NLP
             var systemPrompt = "You are an AI assistant that extracts structured information from user messages for a personal assistant app.\n";
             systemPrompt += "Current time: " + now + "\n";
             systemPrompt += "User timezone: " + timezone + "\n";
+
+            // Add recent conversation context for better multi-turn understanding
+            // (We can't get userId here, but the orchestrator passes context before calling)
             systemPrompt += "User message: \"" + text + "\"\n\n";
             systemPrompt += "CRITICAL: Analyze the user's INTENT correctly. Never confuse queries with creation commands.\n\n";
             systemPrompt += "Return JSON with:\n";
@@ -286,13 +327,6 @@ namespace AiAgentBackend.Services.NLP
             public string Intent { get; set; } = "Unknown";
             public double Confidence { get; set; }
             public Dictionary<string, string>? Entities { get; set; }
-        }
-
-        private class ConversationContext
-        {
-            public string UserMessage { get; set; } = string.Empty;
-            public string BotResponse { get; set; } = string.Empty;
-            public DateTime Timestamp { get; set; }
         }
     }
 }

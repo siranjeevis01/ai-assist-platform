@@ -8,6 +8,12 @@
     <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Tests/**" />
+    <Content Remove="Tests/**" />
+    <EmbeddedResource Remove="Tests/**" />
+    <None Remove="Tests/**" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="DotNetEnv" Version="3.1.1" />
     <PackageReference Include="Google.Apis" Version="1.70.0" />
     <PackageReference Include="Google.Apis.Auth" Version="1.70.0" />
@@ -37,6 +43,7 @@
     <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
     <PackageReference Include="System.Drawing.Common" Version="9.0.9" />
+    <PackageReference Include="StackExchange.Redis" Version="2.8.16" />
 
     <!-- Health checks and swagger annotations -->
     <PackageReference Include="AspNetCore.HealthChecks.UI" Version="8.0.1" />

@@ -69,6 +69,10 @@ export class LayoutComponent {
     { path: '/calendar', icon: 'calendar_today', label: 'Calendar' },
     { path: '/messages', icon: 'chat', label: 'Messages' },
     { path: '/integrations', icon: 'settings', label: 'Integrations' },
+    { path: '/automation', icon: 'bolt', label: 'Automation' },
+    { path: '/documents', icon: 'description', label: 'Documents' },
+    { path: '/voice', icon: 'mic', label: 'Voice' },
+    { path: '/teams', icon: 'group', label: 'Teams' },
     { path: '/settings', icon: 'manage_accounts', label: 'Settings' },
   ];
 

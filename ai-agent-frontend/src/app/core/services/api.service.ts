@@ -7,7 +7,8 @@ import {
   TaskItem, CreateTaskRequest, UpdateTaskRequest,
   CalendarEvent, CreateEventRequest,
   ChatMessage, SendMessageResponse, UserStats,
-  IntegrationStatus, MessagingStatus, UpdateProfileRequest, User, MessagingPreference
+  IntegrationStatus, MessagingStatus, UpdateProfileRequest, User, MessagingPreference,
+  AutomationRule, AutomationTemplate, DocumentInfo, Team
 } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
@@ -136,5 +137,68 @@ export class ApiService {
   // Health
   checkHealth(): Observable<any> {
     return this.http.get(`${this.api}/health/real-time`);
+  }
+
+  // Automation
+  getAutomationRules(): Observable<AutomationRule[]> {
+    return this.http.get<AutomationRule[]>(`${this.api}/api/Automation`);
+  }
+  createAutomationRule(rule: { name: string; triggerType: string; triggerConfig: string; actionsJson: string }): Observable<AutomationRule> {
+    return this.http.post<AutomationRule>(`${this.api}/api/Automation`, rule);
+  }
+  updateAutomationRule(id: number, data: { name?: string; isActive?: boolean }): Observable<any> {
+    return this.http.patch(`${this.api}/api/Automation/${id}`, data);
+  }
+  deleteAutomationRule(id: number): Observable<any> {
+    return this.http.delete(`${this.api}/api/Automation/${id}`);
+  }
+  getAutomationTemplates(): Observable<AutomationTemplate[]> {
+    return this.http.get<AutomationTemplate[]>(`${this.api}/api/Automation/templates`);
+  }
+
+  // Documents
+  getDocuments(): Observable<DocumentInfo[]> {
+    return this.http.get<DocumentInfo[]>(`${this.api}/api/Documents`);
+  }
+  uploadDocument(file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post(`${this.api}/api/Documents/upload`, formData);
+  }
+  queryDocument(id: number, question: string): Observable<{ answer: string }> {
+    return this.http.post<{ answer: string }>(`${this.api}/api/Documents/${id}/query`, { question });
+  }
+  queryAllDocuments(question: string): Observable<{ answer: string }> {
+    return this.http.post<{ answer: string }>(`${this.api}/api/Documents/query-all`, { question });
+  }
+  deleteDocument(id: number): Observable<any> {
+    return this.http.delete(`${this.api}/api/Documents/${id}`);
+  }
+
+  // Voice
+  transcribeAudio(file: File): Observable<{ text: string }> {
+    const formData = new FormData();
+    formData.append('audio', file);
+    return this.http.post<{ text: string }>(`${this.api}/api/Voice/transcribe`, formData);
+  }
+
+  // Teams
+  getTeams(): Observable<Team[]> {
+    return this.http.get<Team[]>(`${this.api}/api/Teams`);
+  }
+  createTeam(data: { name: string; description?: string }): Observable<Team> {
+    return this.http.post<Team>(`${this.api}/api/Teams`, data);
+  }
+  getTeam(id: number): Observable<Team> {
+    return this.http.get<Team>(`${this.api}/api/Teams/${id}`);
+  }
+  addTeamMember(teamId: number, email: string, role: string): Observable<any> {
+    return this.http.post(`${this.api}/api/Teams/${teamId}/members`, { email, role });
+  }
+  removeTeamMember(teamId: number, userId: number): Observable<any> {
+    return this.http.delete(`${this.api}/api/Teams/${teamId}/members/${userId}`);
+  }
+  deleteTeam(id: number): Observable<any> {
+    return this.http.delete(`${this.api}/api/Teams/${id}`);
   }
 }

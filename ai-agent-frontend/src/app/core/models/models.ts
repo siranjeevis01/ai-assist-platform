@@ -153,3 +153,55 @@ export interface MessagingPreference {
   platform: string;
   userId: number;
 }
+
+export interface AutomationRule {
+  id: number;
+  userId: number;
+  name: string;
+  description?: string;
+  triggerType: string;
+  triggerConfig: string;
+  actionsJson: string;
+  isActive: boolean;
+  runCount: number;
+  lastRunAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AutomationTemplate {
+  name: string;
+  description: string;
+  triggerType: string;
+  triggerConfig: Record<string, string>;
+  actions: { type: string; config: Record<string, string>; order: number }[];
+}
+
+export interface DocumentInfo {
+  id: number;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  summary?: string;
+  embeddingStatus: string;
+  createdAt: string;
+  textPreview?: string;
+}
+
+export interface Team {
+  id: number;
+  name: string;
+  description?: string;
+  ownerId: number;
+  createdAt: string;
+  members?: TeamMember[];
+}
+
+export interface TeamMember {
+  id: number;
+  teamId: number;
+  userId: number;
+  role: string;
+  joinedAt: string;
+  user?: { id: number; name: string; email: string };
+}

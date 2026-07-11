@@ -82,6 +82,16 @@ namespace AiAgentBackend.Services.Orchestration
                     throw new Exception($"User {userId} not found");
 
                 var timezone = user.Timezone ?? "UTC";
+
+                // Check for active multi-turn conversation first
+                var currentState = await _conversationStateService.GetCurrentStateAsync(userId);
+                if (currentState != null && !string.IsNullOrEmpty(currentState.Intent) && currentState.ExpiresAt > DateTime.UtcNow)
+                {
+                    _logger.LogInformation("Resuming multi-step conversation for user {UserId}, intent={Intent}, step={Step}",
+                        userId, currentState.Intent, currentState.CurrentStep);
+                    return await HandleMultiStepConversation(userId, messageText, source, currentState);
+                }
+
                 var parsed = await nlp.ParseAsync(cleanText, timezone);
                 _logger.LogInformation($"Parsed intent: {parsed.Intent}, Confidence: {parsed.Confidence}");
 
@@ -828,14 +838,145 @@ protected virtual async Task<string> HandleCreateEvent(int userId, NlpResult par
 
         private async Task<string> HandleTaskCreationStep(int userId, string messageText, ConversationState state)
         {
-            await _conversationStateService.ClearStateAsync(userId);
-            return "Task creation conversation not yet implemented. Please use direct commands for now.";
+            var taskData = JsonSerializer.Deserialize<TaskCreationData>(state.ContextData)
+                        ?? new TaskCreationData();
+
+            switch (state.CurrentStep)
+            {
+                case "CONFIRM_TITLE":
+                    taskData.Title = messageText;
+                    await _conversationStateService.UpdateStateAsync(userId, "CreateTask", "CONFIRM_DUE",
+                        JsonSerializer.Serialize(taskData));
+                    return "Got it! When is this task due? (e.g., 'tomorrow', 'Friday', 'next Monday', or say 'no due date')";
+
+                case "CONFIRM_DUE":
+                    if (messageText.ToLower() != "no" && messageText.ToLower() != "no due date")
+                    {
+                        var userTz = await GetUserTimezone(userId);
+                        taskData.DueDate = ParseDateTime(messageText, userTz);
+                    }
+                    await _conversationStateService.UpdateStateAsync(userId, "CreateTask", "CONFIRM_PRIORITY",
+                        JsonSerializer.Serialize(taskData));
+                    return "What priority? (high, medium, low, or skip)";
+
+                case "CONFIRM_PRIORITY":
+                    var priority = messageText.ToLower().Trim();
+                    if (priority is "high" or "medium" or "low")
+                        taskData.Priority = priority;
+                    await _conversationStateService.UpdateStateAsync(userId, "CreateTask", "CONFIRM_LABELS",
+                        JsonSerializer.Serialize(taskData));
+                    return "Any labels? (e.g., 'work, urgent' or skip)";
+
+                case "CONFIRM_LABELS":
+                    if (!string.IsNullOrEmpty(messageText) && messageText.ToLower() != "skip")
+                    {
+                        taskData.Labels = messageText.Split(',').Select(l => l.Trim()).ToList();
+                    }
+
+                    var task = new TaskItem
+                    {
+                        UserId = userId,
+                        Title = taskData.Title,
+                        Description = taskData.Description,
+                        DueUtc = taskData.DueDate?.ToUniversalTime(),
+                        Status = "To Do",
+                        LabelsJson = JsonSerializer.Serialize(taskData.Labels),
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    _db.Tasks.Add(task);
+                    await _db.SaveChangesAsync();
+
+                    try
+                    {
+                        var trelloToken = await _db.ProviderTokens
+                            .FirstOrDefaultAsync(t => t.UserId == userId && t.Provider == "Trello");
+                        if (trelloToken != null)
+                        {
+                            var trello = _scopeFactory.CreateScope().ServiceProvider.GetRequiredService<ITrelloService>();
+                            var card = await trello.CreateCardAsync(userId, task);
+                            if (card != null && !string.IsNullOrEmpty(card.ExternalId))
+                            {
+                                task.ExternalId = card.ExternalId;
+                                _db.Tasks.Update(task);
+                                await _db.SaveChangesAsync();
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Trello sync failed during multi-turn task creation");
+                    }
+
+                    await _conversationStateService.ClearStateAsync(userId);
+
+                    var dueMsg = task.DueUtc.HasValue ? $" due {task.DueUtc.Value.ToLocalTime():MMM dd}" : "";
+                    var labelMsg = taskData.Labels.Any() ? $" with labels [{string.Join(", ", taskData.Labels)}]" : "";
+                    await _messagingService.SendQuickActionsAsync(userId,
+                        $"Task '{task.Title}' created!{dueMsg}{labelMsg}",
+                        new[] { "Complete", "Snooze", "Edit" });
+
+                    return $"Task '{task.Title}' created successfully!{dueMsg}{labelMsg}";
+
+                default:
+                    await _conversationStateService.ClearStateAsync(userId);
+                    return "I lost track of our conversation. Please start over.";
+            }
         }
 
         private async Task<string> HandleEmailActionStep(int userId, string messageText, ConversationState state)
         {
-            await _conversationStateService.ClearStateAsync(userId);
-            return "Email action conversation not yet implemented. Please use direct commands for now.";
+            var emailData = JsonSerializer.Deserialize<EmailActionData>(state.ContextData)
+                        ?? new EmailActionData();
+
+            switch (state.CurrentStep)
+            {
+                case "CONFIRM_RECIPIENT":
+                    emailData.To = messageText;
+                    await _conversationStateService.UpdateStateAsync(userId, "EmailAction", "CONFIRM_SUBJECT",
+                        JsonSerializer.Serialize(emailData));
+                    return "What should the subject be?";
+
+                case "CONFIRM_SUBJECT":
+                    emailData.Subject = messageText;
+                    await _conversationStateService.UpdateStateAsync(userId, "EmailAction", "CONFIRM_BODY",
+                        JsonSerializer.Serialize(emailData));
+                    return "What should the email body say?";
+
+                case "CONFIRM_BODY":
+                    emailData.Body = messageText;
+                    await _conversationStateService.UpdateStateAsync(userId, "EmailAction", "CONFIRM_SEND",
+                        JsonSerializer.Serialize(emailData));
+                    return $"Ready to send email to {emailData.To}:\nSubject: {emailData.Subject}\n\nSend it? (yes/no)";
+
+                case "CONFIRM_SEND":
+                    if (messageText.ToLower() is "yes" or "y" or "send")
+                    {
+                        try
+                        {
+                            var result = await _gmail.SendEmailAsync(userId, emailData.To, emailData.Subject, emailData.Body);
+                            await _conversationStateService.ClearStateAsync(userId);
+                            return result
+                                ? $"Email sent to {emailData.To} successfully!"
+                                : "Failed to send email. Please try again.";
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Failed to send email via multi-turn flow");
+                            await _conversationStateService.ClearStateAsync(userId);
+                            return "Failed to send email. Please try again later.";
+                        }
+                    }
+                    else
+                    {
+                        await _conversationStateService.ClearStateAsync(userId);
+                        return "Email cancelled. You can start a new email anytime.";
+                    }
+
+                default:
+                    await _conversationStateService.ClearStateAsync(userId);
+                    return "I lost track of our conversation. Please start over.";
+            }
         }
 
         private DateTime ParseDateTime(string input, string timezone)
@@ -952,5 +1093,21 @@ protected virtual async Task<string> HandleCreateEvent(int userId, NlpResult par
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         public List<string> Attendees { get; set; } = new List<string>();
+    }
+
+    public class TaskCreationData
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public DateTime? DueDate { get; set; }
+        public string Priority { get; set; } = "medium";
+        public List<string> Labels { get; set; } = new List<string>();
+    }
+
+    public class EmailActionData
+    {
+        public string To { get; set; } = string.Empty;
+        public string Subject { get; set; } = string.Empty;
+        public string Body { get; set; } = string.Empty;
     }
 }

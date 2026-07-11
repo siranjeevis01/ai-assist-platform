@@ -21,7 +21,9 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.OpenApi.Models;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using AiAgentBackend.Services.Messaging;
+using AiAgentBackend.Services.Cache;
 using Microsoft.Extensions.Primitives; // Add this for StringValues
+using StackExchange.Redis;
 
 // Load .env file if present (for local development)
 try { DotNetEnv.Env.Load(); } catch { }
@@ -188,6 +190,29 @@ builder.Services.AddAuthentication(opt =>
 // HttpClient support
 builder.Services.AddHttpClient();
 
+// Caching - Redis if REDIS_CONNECTION is set, otherwise in-memory
+builder.Services.AddMemoryCache();
+var redisConnection = Environment.GetEnvironmentVariable("REDIS_CONNECTION");
+var useRedis = !string.IsNullOrWhiteSpace(redisConnection);
+if (useRedis)
+{
+    try
+    {
+        var redis = ConnectionMultiplexer.Connect(redisConnection!);
+        builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
+        Console.WriteLine("✅ Redis caching configured");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"⚠️ Redis connection failed ({ex.Message}), falling back to in-memory cache");
+        useRedis = false;
+    }
+}
+if (!useRedis)
+{
+    Console.WriteLine("ℹ️ Using in-memory cache (set REDIS_CONNECTION env var to enable Redis)");
+}
+
 // Rate limiting
 builder.Services.AddRateLimiter(options =>
 {
@@ -236,6 +261,10 @@ builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<INlpService, IntelligentNlpService>();
 builder.Services.AddScoped<NlpService>(); // Keep as fallback
+if (useRedis)
+    builder.Services.AddSingleton<ICacheService, RedisCacheService>();
+else
+    builder.Services.AddSingleton<ICacheService, MemoryCacheService>();
 
 // Integration Services
 builder.Services.AddScoped<IGoogleCalendarService, GoogleCalendarService>();
@@ -243,6 +272,12 @@ builder.Services.AddScoped<ITrelloService, TrelloService>();
 builder.Services.AddScoped<IConversationStateService, ConversationStateService>();
 builder.Services.AddScoped<IGmailService, GmailService>();
 builder.Services.AddScoped<IProactiveNotificationService, ProactiveNotificationService>();
+
+// Automation, Document, Voice, RBAC Services
+builder.Services.AddScoped<AiAgentBackend.Services.Automation.IAutomationService, AiAgentBackend.Services.Automation.AutomationService>();
+builder.Services.AddScoped<AiAgentBackend.Services.Documents.IDocumentService, AiAgentBackend.Services.Documents.DocumentService>();
+builder.Services.AddScoped<AiAgentBackend.Services.Voice.IVoiceService, AiAgentBackend.Services.Voice.VoiceService>();
+builder.Services.AddScoped<AiAgentBackend.Services.RBAC.ITeamService, AiAgentBackend.Services.RBAC.TeamService>();
 
 // Messaging Services (platform-specific)
 builder.Services.AddScoped<ITelegramService, TelegramService>();
@@ -257,6 +292,8 @@ builder.Services.AddScoped<ICommandOrchestrator, CommandOrchestrator>();
 // Background Jobs
 builder.Services.AddScoped<ReminderJob>();
 builder.Services.AddScoped<GmailPollingJob>();
+builder.Services.AddScoped<AiAgentBackend.Jobs.SmartReminderService>();
+builder.Services.AddScoped<AiAgentBackend.Jobs.SmartReminderHangfireJob>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -355,8 +392,31 @@ if (hasDatabase)
             
             if (canConnect)
             {
-                await db.Database.EnsureCreatedAsync();
-                Console.WriteLine("✅ Database tables verified");
+                // Use MigrateAsync instead of EnsureCreatedAsync for proper migration support
+                // EnsureCreatedAsync doesn't work with EF Core migrations
+                try
+                {
+                    var pendingMigrations = await db.Database.GetPendingMigrationsAsync();
+                    var pendingList = pendingMigrations.ToList();
+                    if (pendingList.Any())
+                    {
+                        Console.WriteLine($"📦 Applying {pendingList.Count} pending migration(s): {string.Join(", ", pendingList)}");
+                        await db.Database.MigrateAsync();
+                        Console.WriteLine("✅ All migrations applied successfully");
+                    }
+                    else
+                    {
+                        Console.WriteLine("✅ Database is up to date - no pending migrations");
+                    }
+                }
+                catch (Exception migrateEx)
+                {
+                    // If migrations fail (e.g., first time with no migration files),
+                    // fall back to EnsureCreatedAsync for initial setup
+                    Console.WriteLine($"⚠️ MigrateAsync failed ({migrateEx.Message}), falling back to EnsureCreatedAsync");
+                    await db.Database.EnsureCreatedAsync();
+                    Console.WriteLine("✅ Database tables verified (EnsureCreatedAsync)");
+                }
             }
         }
     }
@@ -681,6 +741,14 @@ if (hasDatabase)
                 "deadline-warnings",
                 () => proactiveService.CheckAndSendTaskDeadlineWarningsAsync(),
                 "0 */6 * * *"
+            );
+
+            // Schedule smart reminders for all users every hour
+            var smartReminderJob = scope.ServiceProvider.GetRequiredService<AiAgentBackend.Jobs.SmartReminderHangfireJob>();
+            recurringJobManager.AddOrUpdate(
+                "smart-reminders",
+                () => smartReminderJob.RunAsync(),
+                Cron.Hourly
             );
 
             Console.WriteLine("✅ Background jobs scheduled successfully");

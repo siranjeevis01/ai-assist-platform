@@ -18,6 +18,10 @@ export const routes: Routes = [
       { path: 'calendar', loadComponent: () => import('./features/calendar/calendar.component').then(m => m.CalendarComponent) },
       { path: 'messages', loadComponent: () => import('./features/messages/messages.component').then(m => m.MessagesComponent) },
       { path: 'integrations', loadComponent: () => import('./features/integrations/integrations.component').then(m => m.IntegrationsComponent) },
+      { path: 'automation', loadComponent: () => import('./features/automation/automation.component').then(m => m.AutomationComponent) },
+      { path: 'documents', loadComponent: () => import('./features/documents/documents.component').then(m => m.DocumentsComponent) },
+      { path: 'voice', loadComponent: () => import('./features/voice/voice.component').then(m => m.VoiceComponent) },
+      { path: 'teams', loadComponent: () => import('./features/teams/teams.component').then(m => m.TeamsComponent) },
       { path: 'settings', loadComponent: () => import('./features/settings/settings.component').then(m => m.SettingsComponent) },
     ]
   },
