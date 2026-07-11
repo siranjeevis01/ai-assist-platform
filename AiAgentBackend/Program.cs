@@ -149,6 +149,20 @@ builder.Services.PostConfigure<OpenAIOptions>(options =>
     options.ApiKey = EnvironmentHelper.ResolveEnvPlaceholder(options.ApiKey);
 });
 
+builder.Services.PostConfigure<GoogleOptions>(options =>
+{
+    options.ClientId = EnvironmentHelper.ResolveEnvPlaceholder(options.ClientId);
+    options.ClientSecret = EnvironmentHelper.ResolveEnvPlaceholder(options.ClientSecret);
+    options.RedirectUri = EnvironmentHelper.ResolveEnvPlaceholder(options.RedirectUri);
+});
+
+builder.Services.PostConfigure<TrelloOptions>(options =>
+{
+    options.ApiKey = EnvironmentHelper.ResolveEnvPlaceholder(options.ApiKey);
+    options.AccessToken = EnvironmentHelper.ResolveEnvPlaceholder(options.AccessToken);
+    options.DefaultBoardId = EnvironmentHelper.ResolveEnvPlaceholder(options.DefaultBoardId);
+});
+
 // Auth / JWT
 var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>() ?? new JwtOptions();
 var jwtKey = jwtOptions.Key ?? "super-secure-32-char-key-1234567890123456";

@@ -17,6 +17,7 @@ export const routes: Routes = [
       { path: 'tasks', loadComponent: () => import('./features/tasks/tasks.component').then(m => m.TasksComponent) },
       { path: 'calendar', loadComponent: () => import('./features/calendar/calendar.component').then(m => m.CalendarComponent) },
       { path: 'messages', loadComponent: () => import('./features/messages/messages.component').then(m => m.MessagesComponent) },
+      { path: 'email', loadComponent: () => import('./features/email/email.component').then(m => m.EmailComponent) },
       { path: 'integrations', loadComponent: () => import('./features/integrations/integrations.component').then(m => m.IntegrationsComponent) },
       { path: 'automation', loadComponent: () => import('./features/automation/automation.component').then(m => m.AutomationComponent) },
       { path: 'documents', loadComponent: () => import('./features/documents/documents.component').then(m => m.DocumentsComponent) },

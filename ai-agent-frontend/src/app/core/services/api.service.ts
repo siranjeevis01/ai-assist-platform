@@ -8,7 +8,8 @@ import {
   CalendarEvent, CreateEventRequest,
   ChatMessage, SendMessageResponse, UserStats,
   IntegrationStatus, MessagingStatus, UpdateProfileRequest, User, MessagingPreference,
-  AutomationRule, AutomationTemplate, DocumentInfo, Team
+  AutomationRule, AutomationTemplate, DocumentInfo, Team,
+  TrelloStatus, CalendarSyncStatus
 } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
@@ -188,6 +189,39 @@ export class ApiService {
     const formData = new FormData();
     formData.append('audio', file);
     return this.http.post<{ text: string }>(`${this.api}/api/Voice/transcribe`, formData);
+  }
+
+  // Gmail
+  getGmailStatus(): Observable<{ connected: boolean; provider: string }> {
+    return this.http.get<{ connected: boolean; provider: string }>(`${this.api}/api/Gmail/status`);
+  }
+  getGmailEmails(query?: string, maxResults?: number): Observable<any[]> {
+    let params = new HttpParams();
+    if (query) params = params.set('query', query);
+    if (maxResults) params = params.set('maxResults', maxResults.toString());
+    return this.http.get<any[]>(`${this.api}/api/Gmail/emails`, { params });
+  }
+  getGmailLabels(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.api}/api/Gmail/labels`);
+  }
+  sendGmailEmail(to: string, subject: string, body: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.api}/api/Gmail/send`, { to, subject, body });
+  }
+
+  // Calendar
+  getCalendarStatus(): Observable<{ connected: boolean; provider: string }> {
+    return this.http.get<{ connected: boolean; provider: string }>(`${this.api}/api/Calendar/status`);
+  }
+  syncCalendar(): Observable<{ message: string }> {
+    return this.http.get<{ message: string }>(`${this.api}/api/Calendar/sync`);
+  }
+
+  // Trello
+  getTrelloStatus(): Observable<{ connected: boolean; configured: boolean; boardId?: string }> {
+    return this.http.get<{ connected: boolean; configured: boolean; boardId?: string }>(`${this.api}/api/Trello/status`);
+  }
+  syncTrelloTasks(): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.api}/api/Trello/sync`, {});
   }
 
   // Teams

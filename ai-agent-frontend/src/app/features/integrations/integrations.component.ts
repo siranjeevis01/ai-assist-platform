@@ -92,6 +92,31 @@ import { ToastService } from '../../shared/toast/toast.service';
 
         <div class="integration-card">
           <div class="integration-header">
+            <div class="integration-icon" style="background: linear-gradient(135deg, #0079bf 0%, #026aa7 100%)">
+              <span class="material-icons">view_kanban</span>
+            </div>
+            <div class="integration-info">
+              <h3>Trello</h3>
+              <p>Project board integration</p>
+            </div>
+            <div class="status" [ngClass]="trelloConnected() ? 'connected' : 'disconnected'">
+              <span class="material-icons">{{ trelloConnected() ? 'check_circle' : 'cancel' }}</span>
+              {{ trelloConnected() ? 'Connected' : 'Disconnected' }}
+            </div>
+          </div>
+          <div class="integration-actions">
+            <button *ngIf="!trelloConnected()" class="btn btn-secondary" disabled>
+              Configure in Environment
+            </button>
+            <button *ngIf="trelloConnected()" class="btn btn-primary" (click)="syncTrello()" [disabled]="trelloLoading()">
+              {{ trelloLoading() ? 'Syncing...' : 'Sync Tasks' }}
+            </button>
+            <button *ngIf="trelloConnected()" class="btn btn-secondary" disabled>Connected</button>
+          </div>
+        </div>
+
+        <div class="integration-card">
+          <div class="integration-header">
             <div class="integration-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)">
               <span class="material-icons">email</span>
             </div>
@@ -119,8 +144,10 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
   googleConnected = signal(false);
   telegramConnected = signal(false);
   whatsAppConnected = signal(false);
+  trelloConnected = signal(false);
   telegramLoading = signal(false);
   whatsAppLoading = signal(false);
+  trelloLoading = signal(false);
   selectedPlatform = 'telegram';
   private subs: Subscription[] = [];
 
@@ -158,6 +185,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     this.subs.push(this.api.getMessagingPreference().subscribe(p => {
       if (p.platform) this.selectedPlatform = p.platform;
     }));
+    this.subs.push(this.api.getTrelloStatus().subscribe(s => this.trelloConnected.set(s.configured)));
   }
 
   connectGoogle(): void {
@@ -193,6 +221,14 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     this.subs.push(this.api.initializeWhatsApp().subscribe({
       next: () => { this.whatsAppConnected.set(true); this.whatsAppLoading.set(false); this.toast.success('WhatsApp initialized'); },
       error: () => { this.whatsAppLoading.set(false); this.toast.error('Failed to initialize WhatsApp'); }
+    }));
+  }
+
+  syncTrello(): void {
+    this.trelloLoading.set(true);
+    this.subs.push(this.api.syncTrelloTasks().subscribe({
+      next: () => { this.trelloLoading.set(false); this.toast.success('Tasks synced with Trello'); },
+      error: () => { this.trelloLoading.set(false); this.toast.error('Failed to sync with Trello'); }
     }));
   }
 

@@ -1,3 +1,4 @@
+using AiAgentBackend.Configuration;
 using AiAgentBackend.Data;
 using AiAgentBackend.Models;
 using Microsoft.EntityFrameworkCore;
@@ -5,6 +6,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using System.Net.Http;
+using Microsoft.Extensions.Options;
 
 
 namespace AiAgentBackend.Services.Integrations
@@ -20,28 +22,28 @@ namespace AiAgentBackend.Services.Integrations
 
     public class TrelloService : ITrelloService
     {
-        private readonly IConfiguration _config;
+        private readonly TrelloOptions _options;
         private readonly HttpClient _http;
         private readonly ApplicationDbContext _db;
         private readonly ILogger<TrelloService> _logger;
 
-        public TrelloService(IConfiguration config, ApplicationDbContext db, ILogger<TrelloService> logger)
+        public TrelloService(IOptions<TrelloOptions> options, ApplicationDbContext db, ILogger<TrelloService> logger)
         {
-            _config = config;
+            _options = options.Value;
             _http = new HttpClient { BaseAddress = new Uri("https://api.trello.com/1/") };
             _db = db;
             _logger = logger;
         }
 
-        private string ApiToken => _config["Trello:ApiToken"] ?? "";
-        private string ApiKey => _config["Trello:ApiKey"] ?? "";
-        private string BoardId => _config["Trello:DefaultBoardId"] ?? "";
+        private string ApiToken => _options.AccessToken;
+        private string ApiKey => _options.ApiKey;
+        private string BoardId => _options.DefaultBoardId;
 
         private string GetListIdForStatus(string status) => status switch
         {
-            "To Do" => _config["Trello:ToDoListId"] ?? "",
-            "In Progress" => _config["Trello:InProgressListId"] ?? "",
-            "Done" => _config["Trello:DoneListId"] ?? "",
+            "To Do" => _options.ToDoListId,
+            "In Progress" => _options.InProgressListId,
+            "Done" => _options.DoneListId,
             _ => BoardId
         };
 
@@ -397,9 +399,9 @@ foreach (var card in cardList)
 
         private string GetStatusFromListId(string listId)
         {
-            if (listId == _config["Trello:ToDoListId"]) return "To Do";
-            if (listId == _config["Trello:InProgressListId"]) return "In Progress";
-            if (listId == _config["Trello:DoneListId"]) return "Done";
+            if (listId == _options.ToDoListId) return "To Do";
+            if (listId == _options.InProgressListId) return "In Progress";
+            if (listId == _options.DoneListId) return "Done";
             return "To Do";
         }
     }

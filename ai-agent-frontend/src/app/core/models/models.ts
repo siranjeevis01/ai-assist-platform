@@ -197,6 +197,26 @@ export interface Team {
   members?: TeamMember[];
 }
 
+export interface TrelloStatus {
+  connected: boolean;
+  configured: boolean;
+  boardId?: string;
+}
+
+export interface GmailEmail {
+  id: string;
+  subject: string;
+  from: string;
+  snippet: string;
+  date: string;
+  isUnread: boolean;
+}
+
+export interface CalendarSyncStatus {
+  connected: boolean;
+  provider: string;
+}
+
 export interface TeamMember {
   id: number;
   teamId: number;

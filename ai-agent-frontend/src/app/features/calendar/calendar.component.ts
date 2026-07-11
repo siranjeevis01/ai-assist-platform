@@ -42,6 +42,19 @@ import { ToastService } from '../../shared/toast/toast.service';
         </div>
       </div>
 
+      <div class="google-sync-bar" *ngIf="calendarConnected() || !calendarConnected()">
+        <div class="sync-info">
+          <span class="material-icons" style="color: #4285f4">event</span>
+          <span>Google Calendar</span>
+          <span class="status" [ngClass]="calendarConnected() ? 'connected' : 'disconnected'">
+            {{ calendarConnected() ? 'Connected' : 'Not connected' }}
+          </span>
+        </div>
+        <button *ngIf="calendarConnected()" class="btn btn-secondary btn-sm" (click)="syncCalendar()" [disabled]="calendarSyncing()">
+          {{ calendarSyncing() ? 'Syncing...' : 'Sync Now' }}
+        </button>
+      </div>
+
       <div class="calendar-content">
         <div class="events-section">
           <h2>Upcoming Events ({{ upcomingEvents().length }})</h2>
@@ -100,6 +113,8 @@ export class CalendarComponent implements OnInit, OnDestroy {
   loading = signal(true);
   showModal = signal(false);
   editingEvent = signal<CalendarEvent | null>(null);
+  calendarConnected = signal(false);
+  calendarSyncing = signal(false);
 
   form = { title: '', description: '', startUtc: '', endUtc: '', location: '', attendeesCsv: '' };
   private subs: Subscription[] = [];
@@ -112,7 +127,10 @@ export class CalendarComponent implements OnInit, OnDestroy {
     private toast: ToastService
   ) {}
 
-  ngOnInit(): void { this.loadEvents(); }
+  ngOnInit(): void {
+    this.loadEvents();
+    this.subs.push(this.api.getCalendarStatus().subscribe(s => this.calendarConnected.set(s.connected)));
+  }
   ngOnDestroy(): void { this.subs.forEach(s => s.unsubscribe()); }
 
   loadEvents(): void {
@@ -172,6 +190,14 @@ export class CalendarComponent implements OnInit, OnDestroy {
     this.subs.push(this.api.deleteEvent(id).subscribe(() => {
       this.toast.success('Event deleted');
       this.loadEvents();
+    }));
+  }
+
+  syncCalendar(): void {
+    this.calendarSyncing.set(true);
+    this.subs.push(this.api.syncCalendar().subscribe({
+      next: () => { this.calendarSyncing.set(false); this.toast.success('Calendar synced'); this.loadEvents(); },
+      error: () => { this.calendarSyncing.set(false); this.toast.error('Failed to sync calendar'); }
     }));
   }
 
