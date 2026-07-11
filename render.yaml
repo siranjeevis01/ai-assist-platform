@@ -96,10 +96,6 @@ services:
         value: siranjeevicad01@gmail.com
       - key: Smtp__EnableSsl
         value: "true"
-      # ── Sentry Error Tracking ──
-      - key: Sentry__Dsn
-        sync: false
-        # Sentry DSN for error tracking — get from sentry.io project settings
     healthCheckPath: /health
     plan: free
     autoDeploy: true

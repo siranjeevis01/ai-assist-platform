@@ -26,8 +26,7 @@ using AiAgentBackend.Services.Cache;
 using AiAgentBackend.Services.PushNotification;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
-using Microsoft.Extensions.Primitives; // Add this for StringValues
-using Sentry;
+using Microsoft.Extensions.Primitives;
 using StackExchange.Redis;
 
 // Load .env file if present (for local development)
@@ -40,15 +39,6 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 {
     serverOptions.AddServerHeader = false;
     serverOptions.ListenAnyIP(5000);
-});
-
-// Sentry
-builder.WebHost.UseSentry(options =>
-{
-    options.Dsn = builder.Configuration["Sentry:Dsn"];
-    options.Environment = builder.Environment.EnvironmentName;
-    options.Release = builder.Configuration["Sentry:Release"];
-    options.TracesSampleRate = builder.Configuration.GetValue<double?>("Sentry:TracesSampleRate") ?? 1.0;
 });
 
 // Serilog
