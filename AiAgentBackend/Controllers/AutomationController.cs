@@ -195,7 +195,7 @@ namespace AiAgentBackend.Controllers
             return Ok(templates);
         }
 
-        private int GetUserId() => int.Parse(User.FindFirst("userId")?.Value ?? "0");
+        private int GetUserId() => int.Parse(User.FindFirst("uid")?.Value ?? User.FindFirst("sub")?.Value ?? "0");
     }
 
     public class CreateAutomationRequest

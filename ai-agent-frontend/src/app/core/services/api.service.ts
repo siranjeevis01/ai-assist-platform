@@ -119,6 +119,12 @@ export class ApiService {
   initializeWhatsApp(): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.api}/api/Messaging/whatsapp/initialize`, {});
   }
+  disconnectTelegram(): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.api}/api/Messaging/disconnect/telegram`, {});
+  }
+  disconnectWhatsApp(): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.api}/api/Messaging/disconnect/whatsapp`, {});
+  }
   setMessagingPreference(platform: string): Observable<MessagingPreference> {
     return this.http.post<MessagingPreference>(`${this.api}/api/Messaging/preference`, { platform });
   }

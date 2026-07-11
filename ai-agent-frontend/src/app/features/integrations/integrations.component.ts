@@ -38,10 +38,10 @@ import { ToastService } from '../../shared/toast/toast.service';
           </div>
           <div class="integration-actions">
             <button *ngIf="!googleConnected()" class="btn btn-primary" (click)="connectGoogle()">
-              Connect Google
+              <span class="material-icons">link</span> Connect Google
             </button>
-            <button *ngIf="googleConnected()" class="btn btn-secondary" (click)="disconnectGoogle()">
-              Disconnect
+            <button *ngIf="googleConnected()" class="btn btn-danger" (click)="disconnectGoogle()">
+              <span class="material-icons">link_off</span> Disconnect
             </button>
           </div>
         </div>
@@ -62,9 +62,12 @@ import { ToastService } from '../../shared/toast/toast.service';
           </div>
           <div class="integration-actions">
             <button *ngIf="!telegramConnected()" class="btn btn-primary" (click)="initTelegram()" [disabled]="telegramLoading()">
+              <span class="material-icons">{{ telegramLoading() ? 'hourglass_empty' : 'power' }}</span>
               {{ telegramLoading() ? 'Initializing...' : 'Initialize Telegram' }}
             </button>
-            <button *ngIf="telegramConnected()" class="btn btn-secondary" disabled>Connected</button>
+            <button *ngIf="telegramConnected()" class="btn btn-danger" (click)="disconnectTelegram()" [disabled]="telegramLoading()">
+              <span class="material-icons">link_off</span> Disconnect
+            </button>
           </div>
         </div>
 
@@ -84,9 +87,12 @@ import { ToastService } from '../../shared/toast/toast.service';
           </div>
           <div class="integration-actions">
             <button *ngIf="!whatsAppConnected()" class="btn btn-primary" (click)="initWhatsApp()" [disabled]="whatsAppLoading()">
+              <span class="material-icons">{{ whatsAppLoading() ? 'hourglass_empty' : 'power' }}</span>
               {{ whatsAppLoading() ? 'Initializing...' : 'Initialize WhatsApp' }}
             </button>
-            <button *ngIf="whatsAppConnected()" class="btn btn-secondary" disabled>Connected</button>
+            <button *ngIf="whatsAppConnected()" class="btn btn-danger" (click)="disconnectWhatsApp()" [disabled]="whatsAppLoading()">
+              <span class="material-icons">link_off</span> Disconnect
+            </button>
           </div>
         </div>
 
@@ -106,19 +112,19 @@ import { ToastService } from '../../shared/toast/toast.service';
           </div>
           <div class="integration-actions">
             <button *ngIf="!trelloConnected()" class="btn btn-secondary" disabled>
-              Configure in Environment
+              <span class="material-icons">info</span> Configure via Environment
             </button>
             <button *ngIf="trelloConnected()" class="btn btn-primary" (click)="syncTrello()" [disabled]="trelloLoading()">
+              <span class="material-icons">{{ trelloLoading() ? 'hourglass_empty' : 'sync' }}</span>
               {{ trelloLoading() ? 'Syncing...' : 'Sync Tasks' }}
             </button>
-            <button *ngIf="trelloConnected()" class="btn btn-secondary" disabled>Connected</button>
           </div>
         </div>
 
-        <div class="integration-card">
+        <div class="integration-card full-width">
           <div class="integration-header">
             <div class="integration-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)">
-              <span class="material-icons">email</span>
+              <span class="material-icons">notifications</span>
             </div>
             <div class="integration-info">
               <h3>Messaging Preference</h3>
@@ -127,18 +133,57 @@ import { ToastService } from '../../shared/toast/toast.service';
           </div>
           <div class="integration-actions">
             <div class="preference-select">
-              <select [(ngModel)]="selectedPlatform" (change)="setPreference()">
+              <select [(ngModel)]="selectedPlatform" (change)="setPreference()" class="responsive-select">
                 <option value="telegram">Telegram</option>
                 <option value="whatsapp">WhatsApp</option>
               </select>
-              <button class="btn btn-primary" (click)="setPreference()">Save Preference</button>
+              <button class="btn btn-primary" (click)="setPreference()">
+                <span class="material-icons">save</span> Save Preference
+              </button>
             </div>
           </div>
         </div>
       </div>
     </div>
   `,
-  styleUrl: './integrations.component.scss'
+  styles: [`
+    .integrations-page { padding: 2rem; }
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .header-content h1 { margin: 0; color: #e0e0e0; font-size: 1.8rem; }
+    .header-content p { margin: 0.3rem 0 0; color: #888; }
+    .integrations-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 1.5rem; }
+    .integration-card { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 16px; padding: 1.5rem; transition: all 0.3s; }
+    .integration-card:hover { border-color: #667eea; transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+    .integration-card.full-width { grid-column: 1 / -1; }
+    .integration-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; }
+    .integration-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .integration-icon .material-icons { font-size: 24px; color: #fff; }
+    .integration-info { flex: 1; }
+    .integration-info h3 { margin: 0; color: #e0e0e0; font-size: 1.1rem; }
+    .integration-info p { margin: 0.2rem 0 0; color: #888; font-size: 0.85rem; }
+    .status { display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+    .status.connected { background: rgba(67, 233, 123, 0.1); color: #43e97b; }
+    .status.disconnected { background: rgba(245, 87, 108, 0.1); color: #f5576c; }
+    .status .material-icons { font-size: 16px; }
+    .integration-actions { display: flex; gap: 0.8rem; flex-wrap: wrap; }
+    .preference-select { display: flex; gap: 0.8rem; align-items: center; width: 100%; }
+    .responsive-select { flex: 1; max-width: 300px; padding: 0.6rem 1rem; background: #2a2a3e; border: 1px solid #444; border-radius: 8px; color: #e0e0e0; font-size: 0.95rem; cursor: pointer; }
+    .responsive-select:focus { border-color: #667eea; outline: none; }
+    .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1.2rem; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn .material-icons { font-size: 18px; }
+    .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(102,126,234,0.4); }
+    .btn-secondary { background: #2a2a3e; color: #e0e0e0; border: 1px solid #444; }
+    .btn-danger { background: rgba(245, 87, 108, 0.15); color: #f5576c; border: 1px solid rgba(245, 87, 108, 0.3); }
+    .btn-danger:hover { background: rgba(245, 87, 108, 0.25); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    @media (max-width: 768px) {
+      .integrations-grid { grid-template-columns: 1fr; }
+      .page-header { flex-direction: column; gap: 1rem; align-items: flex-start; }
+      .preference-select { flex-direction: column; }
+      .responsive-select { max-width: 100%; }
+    }
+  `]
 })
 export class IntegrationsComponent implements OnInit, OnDestroy {
   googleConnected = signal(false);
@@ -209,11 +254,27 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     }));
   }
 
+  disconnectTelegram(): void {
+    this.telegramLoading.set(true);
+    this.subs.push(this.api.disconnectTelegram().subscribe({
+      next: () => { this.telegramConnected.set(false); this.telegramLoading.set(false); this.toast.success('Telegram disconnected'); },
+      error: () => { this.telegramLoading.set(false); this.toast.error('Failed to disconnect Telegram'); }
+    }));
+  }
+
   initWhatsApp(): void {
     this.whatsAppLoading.set(true);
     this.subs.push(this.api.initializeWhatsApp().subscribe({
       next: () => { this.whatsAppConnected.set(true); this.whatsAppLoading.set(false); this.toast.success('WhatsApp initialized'); },
       error: () => { this.whatsAppLoading.set(false); this.toast.error('Failed to initialize WhatsApp'); }
+    }));
+  }
+
+  disconnectWhatsApp(): void {
+    this.whatsAppLoading.set(true);
+    this.subs.push(this.api.disconnectWhatsApp().subscribe({
+      next: () => { this.whatsAppConnected.set(false); this.whatsAppLoading.set(false); this.toast.success('WhatsApp disconnected'); },
+      error: () => { this.whatsAppLoading.set(false); this.toast.error('Failed to disconnect WhatsApp'); }
     }));
   }
 

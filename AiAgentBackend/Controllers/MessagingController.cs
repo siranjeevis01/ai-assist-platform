@@ -272,6 +272,24 @@ namespace AiAgentBackend.Controllers
             }
         }
 
+        [HttpPost("disconnect/{platform}")]
+        public async Task<IActionResult> DisconnectPlatform(string platform)
+        {
+            try
+            {
+                if (platform != "telegram" && platform != "whatsapp")
+                    return BadRequest(new { error = "Platform must be 'telegram' or 'whatsapp'" });
+
+                await _messagingService.DisconnectAsync(platform);
+                return Ok(new { message = $"{platform} disconnected successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error disconnecting {Platform}", platform);
+                return StatusCode(500, new { error = $"Failed to disconnect {platform}" });
+            }
+        }
+
         private int GetUserId()
         {
             var userIdStr = User.FindFirst("uid")?.Value ?? User.FindFirst("sub")?.Value;

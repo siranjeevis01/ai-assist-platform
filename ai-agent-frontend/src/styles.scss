@@ -163,7 +163,16 @@ body {
       &:focus { border-color: #667eea; }
     }
     textarea { resize: vertical; min-height: 80px; }
-    select { background: white; cursor: pointer; }
+    select {
+      background: white;
+      cursor: pointer;
+      width: 100%;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 36px;
+    }
     small { font-size: 12px; color: #888; }
   }
 
