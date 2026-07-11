@@ -27,6 +27,7 @@ using AiAgentBackend.Services.PushNotification;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.Primitives; // Add this for StringValues
+using Sentry;
 using StackExchange.Redis;
 
 // Load .env file if present (for local development)
@@ -39,6 +40,15 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 {
     serverOptions.AddServerHeader = false;
     serverOptions.ListenAnyIP(5000);
+});
+
+// Sentry
+builder.WebHost.UseSentry(options =>
+{
+    options.Dsn = builder.Configuration["Sentry:Dsn"];
+    options.Environment = builder.Environment.EnvironmentName;
+    options.Release = builder.Configuration["Sentry:Release"];
+    options.TracesSampleRate = builder.Configuration.GetValue<double?>("Sentry:TracesSampleRate") ?? 1.0;
 });
 
 // Serilog
@@ -775,6 +785,9 @@ app.MapGet("/api/whatsapp/webhook", (HttpContext context, IConfiguration config)
 // Map controllers and hubs
 app.MapControllers();
 app.MapHub<UpdatesHub>("/hub");
+
+// Health check endpoint
+app.MapHealthChecks("/health");
 
 // Schedule background jobs
 if (hasDatabase)

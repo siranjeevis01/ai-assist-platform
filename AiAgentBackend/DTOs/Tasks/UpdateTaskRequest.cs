@@ -8,5 +8,6 @@ namespace AiAgentBackend.DTOs.Tasks
         public DateTime? DueUtc { get; set; }
         public string? Description { get; set; }
         public string? LabelsCsv { get; set; }
+        public string? RecurrenceRule { get; set; }
     }
 }

@@ -261,16 +261,15 @@ export class EmailComponent implements OnInit {
         this.showCompose.set(false);
         this.composeData = { to: '', subject: '', body: '' };
         this.sending.set(false);
-        this.toast.success('Email sent');
         if (res.undoId) {
-          setTimeout(() => {
-            if (confirm('Undo this email?')) {
-              this.api.undoSendEmail(res.undoId).subscribe({
-                next: () => this.toast.success('Undo noted'),
-                error: () => this.toast.error('Undo window expired')
-              });
-            }
-          }, 3000);
+          this.toast.undo('Email sent', () => {
+            this.api.undoSendEmail(res.undoId).subscribe({
+              next: () => this.toast.success('Undo successful'),
+              error: () => this.toast.error('Undo window expired')
+            });
+          });
+        } else {
+          this.toast.success('Email sent');
         }
       },
       error: () => { this.sending.set(false); this.toast.error('Failed to send email'); }

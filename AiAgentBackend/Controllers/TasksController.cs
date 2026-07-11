@@ -75,7 +75,8 @@ namespace AiAgentBackend.Controllers
                     DueUtc = req.DueUtc,
                     Description = req.Description,
                     Status = "To Do",
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    RecurrenceRule = req.RecurrenceRule
                 };
 
                 if (!string.IsNullOrWhiteSpace(req.LabelsCsv))
@@ -164,6 +165,9 @@ namespace AiAgentBackend.Controllers
                         .ToArray();
                     task.LabelsJson = JsonSerializer.Serialize(labels);
                 }
+
+                if (req.RecurrenceRule is not null)
+                    task.RecurrenceRule = req.RecurrenceRule;
 
                 // Set completed date if task is marked as done
                 if (req.Status == "Done" && task.Status != "Done")

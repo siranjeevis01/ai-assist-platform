@@ -12,14 +12,82 @@ services:
         value: https://ai-agent-frontend-46u3.onrender.com,https://aiagent-siranjeevis01.web.app,https://aiagent-siranjeevis01.firebaseapp.com
       - key: AI_AGENT_BASE_URL
         value: https://ai-agent-backend-ko2p.onrender.com
+      # ── Database (TiDB) ──
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+        # TiDB connection string — format: Server=<host>;Port=<port>;Database=<db>;User=<user>;Password=<pass>;SslMode=VerifyFull;
+      # ── Redis (Redis Cloud) ──
+      - key: REDIS_CONNECTION
+        sync: false
+        # Redis Cloud connection URL, e.g. rediss://:<password>@<host>:<port>
+      # ── JWT Authentication ──
+      - key: Jwt__Key
+        sync: false
+        # Secret key for JWT signing — must be at least 32 characters
+      - key: Jwt__Issuer
+        sync: false
+        # JWT issuer — e.g. AiAgentBackend
+      - key: Jwt__Audience
+        sync: false
+        # JWT audience — e.g. AiAgentUsers
+      # ── Google OAuth ──
+      - key: Google__ClientId
+        sync: false
+        # Google OAuth 2.0 client ID from Google Cloud Console
+      - key: Google__ClientSecret
+        sync: false
+        # Google OAuth 2.0 client secret
+      - key: Google__RedirectUri
+        sync: false
+        # Google OAuth redirect URI — e.g. https://ai-agent-backend-ko2p.onrender.com/api/auth/google-callback
+      # ── Telegram ──
       - key: Messaging__Telegram__Enabled
         value: "true"
+      - key: Messaging__Telegram__BotToken
+        sync: false
+        # Telegram bot token from @BotFather
+      # ── WhatsApp Cloud API ──
       - key: Messaging__WhatsApp__Enabled
         value: "false"
+      - key: Messaging__WhatsApp__AccessToken
+        sync: false
+        # WhatsApp Cloud API access token from Meta Developer Portal
+      - key: Messaging__WhatsApp__PhoneNumberId
+        sync: false
+        # WhatsApp Phone Number ID from Meta Developer Portal
       - key: Messaging__WhatsApp__VerifyToken
         value: ai-agent-verify-2024
+      - key: Messaging__WhatsApp__AppSecret
+        sync: false
+        # WhatsApp App Secret from Meta Developer Portal — used for webhook signature verification
+      # ── Trello ──
+      - key: Trello__ApiKey
+        sync: false
+        # Trello API key from https://trello.com/power-ups/admin
+      - key: Trello__AccessToken
+        sync: false
+        # Trello OAuth access token
+      # ── OpenAI ──
+      - key: OpenAI__ApiKey
+        sync: false
+        # OpenAI API key (sk-...)
       - key: OpenAI__Model
         value: gpt-4o-mini
+      # ── Google Gemini ──
+      - key: Gemini__ApiKey
+        sync: false
+        # Google Gemini API key from https://aistudio.google.com/apikey
+      # ── Firebase Cloud Messaging (FCM) ──
+      - key: FCM__ProjectId
+        sync: false
+        # Firebase project ID for push notifications
+      - key: FCM__PrivateKey
+        sync: false
+        # Firebase service account private key (full PEM string)
+      - key: FCM__ClientEmail
+        sync: false
+        # Firebase service account client email
+      # ── SMTP (Email) ──
       - key: Smtp__Host
         value: smtp.gmail.com
       - key: Smtp__Port
@@ -28,6 +96,10 @@ services:
         value: siranjeevicad01@gmail.com
       - key: Smtp__EnableSsl
         value: "true"
-    healthCheckPath: /health/real-time
+      # ── Sentry Error Tracking ──
+      - key: Sentry__Dsn
+        sync: false
+        # Sentry DSN for error tracking — get from sentry.io project settings
+    healthCheckPath: /health
     plan: free
     autoDeploy: true

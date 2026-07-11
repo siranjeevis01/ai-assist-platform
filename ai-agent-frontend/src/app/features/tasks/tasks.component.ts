@@ -55,6 +55,16 @@ import { ToastService } from '../../shared/toast/toast.service';
                 </select>
               </div>
             </div>
+            <div class="form-group"><label>Recurrence</label>
+              <select [(ngModel)]="recurrenceOption" name="recurrence" (ngModelChange)="onRecurrenceChange($event)">
+                <option value="none">None</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="biweekly">Biweekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
             <div class="modal-actions">
               <button type="button" class="btn btn-secondary" (click)="showNewTask.set(false)">Cancel</button>
               <button type="submit" class="btn btn-primary">Create Task</button>
@@ -79,6 +89,7 @@ import { ToastService } from '../../shared/toast/toast.service';
               <p *ngIf="task.description" class="task-description">{{ task.description }}</p>
               <div class="task-meta">
                 <span *ngIf="task.dueUtc" class="due-date"><span class="material-icons" style="font-size:14px">calendar_today</span> Due: {{ task.dueUtc | date:'mediumDate' }}</span>
+                <span *ngIf="task.recurrenceRule" class="due-date"><span class="material-icons" style="font-size:14px">repeat</span> {{ formatRecurrence(task.recurrenceRule) }}</span>
                 <span class="status-badge" [class.to-do]="task.status === 'To Do'" [class.in-progress]="task.status === 'In Progress'" [class.done]="task.status === 'Done'">{{ task.status }}</span>
               </div>
             </div>
@@ -101,7 +112,16 @@ export class TasksComponent implements OnInit, OnDestroy {
   private subs: Subscription[] = [];
 
   statusFilters = ['all', 'To Do', 'In Progress', 'Done'];
-  newTask = { title: '', description: '', dueUtc: '', status: 'To Do' };
+  newTask: any = { title: '', description: '', dueUtc: '', status: 'To Do', recurrenceRule: '' };
+  recurrenceOption = 'none';
+
+  private readonly recurrenceMap: Record<string, string> = {
+    daily: 'FREQ=DAILY',
+    weekly: 'FREQ=WEEKLY',
+    biweekly: 'FREQ=WEEKLY;INTERVAL=2',
+    monthly: 'FREQ=MONTHLY',
+    yearly: 'FREQ=YEARLY'
+  };
 
   completedCount = computed(() => this.tasks().filter(t => t.status === 'Done').length);
   inProgressCount = computed(() => this.tasks().filter(t => t.status === 'In Progress').length);
@@ -137,10 +157,20 @@ export class TasksComponent implements OnInit, OnDestroy {
     if (!this.newTask.title) return;
     this.subs.push(this.api.createTask(this.newTask).subscribe(() => {
       this.showNewTask.set(false);
-      this.newTask = { title: '', description: '', dueUtc: '', status: 'To Do' };
+      this.newTask = { title: '', description: '', dueUtc: '', status: 'To Do', recurrenceRule: '' };
+      this.recurrenceOption = 'none';
       this.toast.success('Task created');
       this.loadTasks();
     }));
+  }
+
+  onRecurrenceChange(option: string): void {
+    this.newTask.recurrenceRule = option === 'none' ? '' : this.recurrenceMap[option] || '';
+  }
+
+  formatRecurrence(rule: string): string {
+    const entry = Object.entries(this.recurrenceMap).find(([, v]) => rule === v);
+    return entry ? entry[0].charAt(0).toUpperCase() + entry[0].slice(1) : rule;
   }
 
   toggleTaskStatus(id: number, event: any): void {

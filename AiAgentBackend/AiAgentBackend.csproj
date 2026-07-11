@@ -36,6 +36,7 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.8" />
     <PackageReference Include="QRCoder" Version="1.6.0" />
+    <PackageReference Include="Sentry.AspNetCore" Version="6.6.0" />
     <PackageReference Include="Serilog.Sinks.Seq" Version="9.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.8" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />

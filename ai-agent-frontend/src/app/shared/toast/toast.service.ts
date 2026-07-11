@@ -5,6 +5,7 @@ export interface Toast {
   message: string;
   type: 'success' | 'error' | 'info' | 'warning';
   duration?: number;
+  undoCallback?: () => void;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -22,6 +23,12 @@ export class ToastService {
   error(message: string): void { this.show(message, 'error', 6000); }
   info(message: string): void { this.show(message, 'info'); }
   warning(message: string): void { this.show(message, 'warning', 5000); }
+
+  undo(message: string, undoCallback: () => void): void {
+    const id = this.nextId++;
+    this.toasts.update(t => [...t, { id, message, type: 'info', duration: 7000, undoCallback }]);
+    setTimeout(() => this.dismiss(id), 7000);
+  }
 
   dismiss(id: number): void {
     this.toasts.update(t => t.filter(toast => toast.id !== id));

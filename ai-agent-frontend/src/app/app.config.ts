@@ -1,10 +1,11 @@
-import { ApplicationConfig, provideZoneChangeDetection, APP_INITIALIZER } from '@angular/core';
+import { ApplicationConfig, provideZoneChangeDetection, APP_INITIALIZER, ErrorHandler } from '@angular/core';
 import { provideRouter, withComponentInputBinding, withRouterConfig } from '@angular/router';
 import { provideHttpClient, withInterceptors, withFetch } from '@angular/common/http';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { retryInterceptor } from './core/interceptors/retry.interceptor';
 import { PushNotificationService } from './core/services/push-notification.service';
+import { GlobalErrorHandler } from './core/handlers/global-error.handler';
 
 function initPushNotifications(push: PushNotificationService) {
   return () => {
@@ -26,5 +27,6 @@ export const appConfig: ApplicationConfig = {
       deps: [PushNotificationService],
       multi: true,
     },
+    { provide: ErrorHandler, useClass: GlobalErrorHandler },
   ]
 };

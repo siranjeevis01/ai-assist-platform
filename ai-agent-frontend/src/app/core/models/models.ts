@@ -48,6 +48,7 @@ export interface TaskItem {
   createdAt: string;
   lastReminderSentAt?: string;
   completedAt?: string;
+  recurrenceRule?: string;
 }
 
 export interface CreateTaskRequest {
@@ -55,6 +56,7 @@ export interface CreateTaskRequest {
   dueUtc?: string;
   description?: string;
   labelsCsv?: string;
+  recurrenceRule?: string;
 }
 
 export interface UpdateTaskRequest {
@@ -63,6 +65,7 @@ export interface UpdateTaskRequest {
   dueUtc?: string;
   description?: string;
   labelsCsv?: string;
+  recurrenceRule?: string;
 }
 
 export interface CalendarEvent {
