@@ -122,6 +122,73 @@ namespace AiAgentBackend.Controllers
                     {
                         new { type = "send_notification", config = new Dictionary<string, string> { ["message"] = "New document uploaded: {file_name}" }, order = 0 }
                     }
+                },
+                new
+                {
+                    name = "New Event → Send Reminder",
+                    description = "Send a reminder 30 minutes before each event",
+                    triggerType = "event_created",
+                    triggerConfig = new Dictionary<string, string> { ["minutes_before"] = "30" },
+                    actions = new[]
+                    {
+                        new { type = "send_notification", config = new Dictionary<string, string> { ["message"] = "Reminder: '{title}' starts in 30 minutes at {location}" }, order = 0 }
+                    }
+                },
+                new
+                {
+                    name = "Overdue Task → Email Alert",
+                    description = "Send email alert when a task is overdue",
+                    triggerType = "task_overdue",
+                    triggerConfig = new Dictionary<string, string>(),
+                    actions = new[]
+                    {
+                        new { type = "send_email", config = new Dictionary<string, string> { ["subject"] = "Overdue: {title}", ["body"] = "Task '{title}' was due on {due_date}. Please update its status." }, order = 0 },
+                        new { type = "send_notification", config = new Dictionary<string, string> { ["message"] = "Task '{title}' is overdue!" }, order = 1 }
+                    }
+                },
+                new
+                {
+                    name = "Weekly Report",
+                    description = "Send weekly task completion report every Friday",
+                    triggerType = "schedule",
+                    triggerConfig = new Dictionary<string, string> { ["cron"] = "0 17 * * 5" },
+                    actions = new[]
+                    {
+                        new { type = "send_notification", config = new Dictionary<string, string> { ["message"] = "Weekly Report:\nCompleted this week: {completed_this_week}\nPending: {pending_tasks}\nCompletion rate: {completion_rate}%" }, order = 0 }
+                    }
+                },
+                new
+                {
+                    name = "Task Started → Log Activity",
+                    description = "Log activity when a task moves to In Progress",
+                    triggerType = "task_status_changed",
+                    triggerConfig = new Dictionary<string, string> { ["from_status"] = "To Do", ["to_status"] = "In Progress" },
+                    actions = new[]
+                    {
+                        new { type = "send_notification", config = new Dictionary<string, string> { ["message"] = "Started working on: {title}" }, order = 0 }
+                    }
+                },
+                new
+                {
+                    name = "High Priority Email → Telegram Alert",
+                    description = "Forward urgent emails to Telegram instantly",
+                    triggerType = "email_received",
+                    triggerConfig = new Dictionary<string, string> { ["priority"] = "equals:high" },
+                    actions = new[]
+                    {
+                        new { type = "send_notification", config = new Dictionary<string, string> { ["channel"] = "telegram", ["message"] = "URGENT EMAIL\nFrom: {from}\nSubject: {subject}\nPreview: {snippet}" }, order = 0 }
+                    }
+                },
+                new
+                {
+                    name = "Recurring Task Creator",
+                    description = "Auto-create a recurring task every Monday at 9 AM",
+                    triggerType = "schedule",
+                    triggerConfig = new Dictionary<string, string> { ["cron"] = "0 9 * * 1" },
+                    actions = new[]
+                    {
+                        new { type = "create_task", config = new Dictionary<string, string> { ["title"] = "Weekly review and planning", ["description"] = "Auto-generated weekly task", ["due_date"] = "end_of_week" }, order = 0 }
+                    }
                 }
             };
 
