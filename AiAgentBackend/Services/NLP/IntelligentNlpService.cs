@@ -37,15 +37,21 @@ namespace AiAgentBackend.Services.NLP
 
         public async Task<NlpResult> ParseAsync(string text, string timezone)
         {
+            return await ParseAsync(text, timezone, 0);
+        }
+
+        public async Task<NlpResult> ParseAsync(string text, string timezone, int userId)
+        {
             if (string.IsNullOrWhiteSpace(text))
                 return new NlpResult { Intent = "Unknown", Confidence = 0.0 };
 
-            // Try Gemini first, then OpenAI, then fallback keyword parser
+            var conversationContext = userId > 0 ? await GetConversationContext(userId) : "";
+
             if (!string.IsNullOrEmpty(_apiKey))
             {
                 try
                 {
-                    var result = await CallGeminiAsync(text, timezone);
+                    var result = await CallGeminiAsync(text, timezone, conversationContext);
                     if (result != null && !string.IsNullOrEmpty(result.Intent) && result.Intent != "Unknown")
                     {
                         _logger.LogInformation("Gemini NLP: Intent={Intent}, Confidence={Confidence}", result.Intent, result.Confidence);
@@ -58,12 +64,11 @@ namespace AiAgentBackend.Services.NLP
                 }
             }
 
-            // Fallback to OpenAI if Gemini fails or isn't configured
             if (!string.IsNullOrEmpty(_openAIApiKey))
             {
                 try
                 {
-                    var result = await CallOpenAIAsync(text, timezone);
+                    var result = await CallOpenAIAsync(text, timezone, conversationContext);
                     if (result != null && !string.IsNullOrEmpty(result.Intent) && result.Intent != "Unknown")
                     {
                         _logger.LogInformation("OpenAI NLP: Intent={Intent}, Confidence={Confidence}", result.Intent, result.Confidence);
@@ -152,7 +157,7 @@ namespace AiAgentBackend.Services.NLP
             }
         }
 
-        private async Task<NlpResult?> CallGeminiAsync(string text, string timezone)
+        private async Task<NlpResult?> CallGeminiAsync(string text, string timezone, string conversationContext)
         {
             var now = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + " UTC";
 
@@ -160,12 +165,15 @@ namespace AiAgentBackend.Services.NLP
             systemPrompt += "Current time: " + now + "\n";
             systemPrompt += "User timezone: " + timezone + "\n";
 
-            // Add recent conversation context for better multi-turn understanding
-            // (We can't get userId here, but the orchestrator passes context before calling)
+            if (!string.IsNullOrEmpty(conversationContext))
+            {
+                systemPrompt += conversationContext + "\n";
+            }
+
             systemPrompt += "User message: \"" + text + "\"\n\n";
             systemPrompt += "CRITICAL: Analyze the user's INTENT correctly. Never confuse queries with creation commands.\n\n";
             systemPrompt += "Return JSON with:\n";
-            systemPrompt += "- intent: one of [CreateEvent, CreateTask, CreateReminder, UpdateTask, CheckCalendar, CheckTasks, EmailAction, Unknown]\n";
+            systemPrompt += "- intent: one of [CreateEvent, CreateTask, CreateReminder, UpdateTask, CheckCalendar, CheckTasks, EmailAction, SendEmail, CheckWeather, SetGoal, DeleteTask, SearchWeb, Unknown]\n";
             systemPrompt += "- confidence: number 0.0-1.0\n";
             systemPrompt += "- entities: object with extracted information (omit title for queries)\n\n";
             systemPrompt += "EXAMPLES — learn these:\n";
@@ -189,7 +197,12 @@ namespace AiAgentBackend.Services.NLP
             systemPrompt += "- CreateEvent: user wants to CREATE a new event/meeting/appointment\n";
             systemPrompt += "- CreateTask: user wants to CREATE a new task/todo\n";
             systemPrompt += "- CreateReminder: user wants to SET a reminder/alert\n";
-            systemPrompt += "- UpdateTask: user wants to mark done/complete/update a task\n\n";
+            systemPrompt += "- UpdateTask: user wants to mark done/complete/update a task\n";
+            systemPrompt += "- SendEmail: user wants to send/compose/write an email (send email to, email to, write to, compose email)\n";
+            systemPrompt += "- CheckWeather: user wants to know weather/forecast/temperature\n";
+            systemPrompt += "- SetGoal: user wants to set a goal/target/objective\n";
+            systemPrompt += "- DeleteTask: user wants to delete/remove/cancel a task\n";
+            systemPrompt += "- SearchWeb: user wants to search/look up/find information\n\n";
             systemPrompt += "Title extraction rules:\n";
             systemPrompt += "- STRIP all command words: create, schedule, add, new, show, list, view, check, my, set, make\n";
             systemPrompt += "- STRIP all temporal words: tomorrow, today, next, this, upcoming\n";
@@ -259,15 +272,21 @@ namespace AiAgentBackend.Services.NLP
             };
         }
 
-        private async Task<NlpResult?> CallOpenAIAsync(string text, string timezone)
+        private async Task<NlpResult?> CallOpenAIAsync(string text, string timezone, string conversationContext)
         {
             var now = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + " UTC";
 
             var systemPrompt = "You are an AI assistant that extracts structured information from user messages.\n";
             systemPrompt += "Current time: " + now + "\n";
             systemPrompt += "User timezone: " + timezone + "\n";
+
+            if (!string.IsNullOrEmpty(conversationContext))
+            {
+                systemPrompt += conversationContext + "\n";
+            }
+
             systemPrompt += "Return JSON with intent, confidence (0.0-1.0), and entities.\n";
-            systemPrompt += "Intent must be one of: CreateEvent, CreateTask, CreateReminder, UpdateTask, CheckCalendar, CheckTasks, EmailAction, Unknown\n";
+            systemPrompt += "Intent must be one of: CreateEvent, CreateTask, CreateReminder, UpdateTask, CheckCalendar, CheckTasks, EmailAction, SendEmail, CheckWeather, SetGoal, DeleteTask, SearchWeb, Unknown\n";
             systemPrompt += "Handle typos gracefully. Respond ONLY with valid JSON.";
 
             var requestBody = new

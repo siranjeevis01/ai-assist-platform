@@ -92,8 +92,13 @@ namespace AiAgentBackend.Services.Orchestration
                     return await HandleMultiStepConversation(userId, messageText, source, currentState);
                 }
 
-                var parsed = await nlp.ParseAsync(cleanText, timezone);
+                var parsed = await nlp.ParseAsync(cleanText, timezone, userId);
                 _logger.LogInformation($"Parsed intent: {parsed.Intent}, Confidence: {parsed.Confidence}");
+
+                if (parsed.Confidence < 0.3 && parsed.Intent != "Unknown")
+                {
+                    parsed.Intent = "Unknown";
+                }
 
                 // Store the message
                 var message = new Message
@@ -121,6 +126,11 @@ namespace AiAgentBackend.Services.Orchestration
                     "CheckTasks" => await HandleQueryCommandAsync(userId, parsed, source),
                     "CheckEmails" => await HandleEmailCommandAsync(userId, parsed, source),
                     "EmailAction" => await HandleEmailCommandAsync(userId, parsed, source),
+                    "SendEmail" => await HandleEmailCommandAsync(userId, parsed, source),
+                    "CheckWeather" => await HandleWeatherQueryAsync(userId, parsed, source),
+                    "SetGoal" => await HandleGoalCommandAsync(userId, parsed, source),
+                    "DeleteTask" => await HandleDeleteTaskCommandAsync(userId, parsed, source),
+                    "SearchWeb" => await HandleSearchQueryAsync(userId, parsed, source),
                     _ => await HandleFallbackCommandAsync(userId, cleanText, source)
                 };
 
@@ -308,6 +318,73 @@ namespace AiAgentBackend.Services.Orchestration
                 _logger.LogError(ex, "Error handling email command");
                 return "Sorry, I encountered an error processing your email request.";
             }
+        }
+
+        private async Task<string> HandleWeatherQueryAsync(int userId, NlpResult parsed, string source)
+        {
+            var location = parsed.Entities.GetValueOrDefault("location", "your area");
+            return $"I can help with weather once a weather API is configured. " +
+                   $"Currently, I'd check the forecast for {location}. " +
+                   $"Please configure a weather provider to enable this feature.";
+        }
+
+        private async Task<string> HandleGoalCommandAsync(int userId, NlpResult parsed, string source)
+        {
+            return await HandleCreateTask(userId, parsed, await GetUserPreference(userId), source);
+        }
+
+        private async Task<string> HandleDeleteTaskCommandAsync(int userId, NlpResult parsed, string source)
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            try
+            {
+                var title = parsed.Entities.GetValueOrDefault("title", "");
+
+                TaskItem? taskToDelete = null;
+
+                if (!string.IsNullOrEmpty(title))
+                {
+                    taskToDelete = await db.Tasks
+                        .Where(t => t.UserId == userId && t.Title.Contains(title))
+                        .OrderByDescending(t => t.Id)
+                        .FirstOrDefaultAsync();
+                }
+
+                if (taskToDelete == null)
+                {
+                    taskToDelete = await db.Tasks
+                        .Where(t => t.UserId == userId)
+                        .OrderByDescending(t => t.Id)
+                        .FirstOrDefaultAsync();
+                }
+
+                if (taskToDelete == null)
+                    return "No matching task found to delete.";
+
+                var deletedTitle = taskToDelete.Title;
+                db.Tasks.Remove(taskToDelete);
+                await db.SaveChangesAsync();
+
+                await _messagingService.SendMessageAsync(userId, $"Task '{deletedTitle}' has been deleted.");
+                return $"Task '{deletedTitle}' deleted successfully.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting task");
+                return "Sorry, I encountered an error deleting the task. Please try again.";
+            }
+        }
+
+        private async Task<string> HandleSearchQueryAsync(int userId, NlpResult parsed, string source)
+        {
+            var query = parsed.Entities.GetValueOrDefault("title", parsed.Entities.GetValueOrDefault("query", ""));
+            if (string.IsNullOrEmpty(query))
+                return "What would you like me to search for?";
+
+            return $"Web search is coming soon. I would search for: \"{query}\". " +
+                   $"This feature will be available in a future update.";
         }
 
         public async Task<string> HandleQueryCommandAsync(int userId, NlpResult parsed, string source)

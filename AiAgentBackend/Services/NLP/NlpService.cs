@@ -7,6 +7,7 @@ namespace AiAgentBackend.Services.NLP
     public interface INlpService
     {
         Task<NlpResult> ParseAsync(string text, string timezone);
+        Task<NlpResult> ParseAsync(string text, string timezone, int userId);
     }
 
     public class NlpResult
@@ -102,6 +103,11 @@ namespace AiAgentBackend.Services.NLP
 
         public async Task<NlpResult> ParseAsync(string text, string timezone)
         {
+            return await ParseAsync(text, timezone, 0);
+        }
+
+        public async Task<NlpResult> ParseAsync(string text, string timezone, int userId)
+        {
             if (string.IsNullOrWhiteSpace(text))
             {
                 return new NlpResult
@@ -159,8 +165,17 @@ namespace AiAgentBackend.Services.NLP
             var result = new NlpResult { Confidence = 0.8 };
             var lowerText = text.ToLowerInvariant();
 
-            // Intent detection: most specific patterns first
-            if (IsEmailQuery(lowerText))
+            if (IsSendEmail(lowerText))
+                result.Intent = "SendEmail";
+            else if (IsWeatherQuery(lowerText))
+                result.Intent = "CheckWeather";
+            else if (IsSetGoal(lowerText))
+                result.Intent = "SetGoal";
+            else if (IsDeleteTask(lowerText))
+                result.Intent = "DeleteTask";
+            else if (IsSearchWeb(lowerText))
+                result.Intent = "SearchWeb";
+            else if (IsEmailQuery(lowerText))
                 result.Intent = "EmailAction";
             else if (IsCalendarQuery(lowerText))
                 result.Intent = "CheckCalendar";
@@ -205,10 +220,52 @@ namespace AiAgentBackend.Services.NLP
 
         private bool IsEmailQuery(string lowerText)
         {
+            if (ContainsAny(lowerText, new[] {"send email to", "email to", "write to", "compose email"}))
+                return true;
             if (ContainsAny(lowerText, new[] {"email", "mail", "inbox"}))
                 return true;
             if (ContainsAny(lowerText, new[] {"check email", "check mail", "show email", "show mail",
                 "read email", "read mail", "my email", "my mail", "unread"}))
+                return true;
+            return false;
+        }
+
+        private bool IsSendEmail(string lowerText)
+        {
+            return ContainsAny(lowerText, new[] {"send email to", "email to", "write to", "compose email"});
+        }
+
+        private bool IsWeatherQuery(string lowerText)
+        {
+            return ContainsAny(lowerText, new[] {"weather", "forecast", "temperature"});
+        }
+
+        private bool IsSetGoal(string lowerText)
+        {
+            if (ContainsAny(lowerText, new[] {"set goal", "goal for", "target", "objective"}))
+                return true;
+            if (ContainsAny(lowerText, new[] {"set", "create", "add", "new"})
+                && ContainsAny(lowerText, new[] {"goal", "target", "objective"}))
+                return true;
+            return false;
+        }
+
+        private bool IsDeleteTask(string lowerText)
+        {
+            if (ContainsAny(lowerText, new[] {"delete task", "remove task", "cancel task"}))
+                return true;
+            if (ContainsAny(lowerText, new[] {"delete", "remove", "cancel"})
+                && ContainsAny(lowerText, new[] {"task", "to-do", "todo"}))
+                return true;
+            return false;
+        }
+
+        private bool IsSearchWeb(string lowerText)
+        {
+            if (ContainsAny(lowerText, new[] {"search for", "look up", "find information about", "google"}))
+                return true;
+            if (ContainsAny(lowerText, new[] {"search", "lookup", "look up"})
+                && !IsCalendarQuery(lowerText) && !IsTasksQuery(lowerText))
                 return true;
             return false;
         }
@@ -282,7 +339,7 @@ namespace AiAgentBackend.Services.NLP
             var entities = new Dictionary<string, string>();
 
             // For query intents, don't extract a title
-            if (intent is "CheckCalendar" or "CheckTasks" or "EmailAction")
+            if (intent is "CheckCalendar" or "CheckTasks" or "EmailAction" or "CheckWeather" or "SearchWeb")
             {
                 entities["date"] = ExtractDate(text.ToLower(), timezone);
                 return entities;
@@ -323,6 +380,26 @@ namespace AiAgentBackend.Services.NLP
             // Priority detection
             if (ContainsAny(text.ToLower(), new[] {"urgent", "asap", "important", "critical", "high priority"}))
                 entities["priority"] = "high";
+            else if (ContainsAny(text.ToLower(), new[] {"medium priority", "moderate priority"}))
+                entities["priority"] = "medium";
+            else if (ContainsAny(text.ToLower(), new[] {"low priority", "minor priority"}))
+                entities["priority"] = "low";
+
+            // Attendees extraction
+            var attendeesMatch = Regex.Match(text, @"(?:with|invite)\s+([A-Za-z0-9\s,]+?)(?:\s+(?:tomorrow|today|at|on|for|by|every|$)|$)", RegexOptions.IgnoreCase);
+            if (attendeesMatch.Success)
+            {
+                var attendeesStr = attendeesMatch.Groups[1].Value.Trim();
+                if (attendeesStr.Length > 1 && attendeesStr.Length < 200)
+                    entities["attendees"] = attendeesStr;
+            }
+
+            // Recurring extraction
+            var recurringMatch = Regex.Match(text.ToLower(), @"(daily|weekly|monthly|every\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday))");
+            if (recurringMatch.Success)
+            {
+                entities["recurring"] = recurringMatch.Value;
+            }
 
             // Location detection
             var locationMatch = Regex.Match(text, @"(?:at|in|@)\s+([A-Za-z0-9\s]+?)(?:\s+(?:tomorrow|today|at|on|with|for|by|$)|$)", RegexOptions.IgnoreCase);

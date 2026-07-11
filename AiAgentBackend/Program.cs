@@ -480,6 +480,7 @@ app.UseCors("AllowFrontend");
 
 // Rate limiting
 app.UseRateLimiter();
+app.UseMiddleware<UserRateLimitMiddleware>();
 
 // Swagger (enabled in both Development and Production for API docs)
 app.UseSwagger(c =>

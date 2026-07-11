@@ -12,7 +12,6 @@ export const routes: Routes = [
     component: LayoutComponent,
     canActivate: [AuthGuard],
     children: [
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent) },
       { path: 'tasks', loadComponent: () => import('./features/tasks/tasks.component').then(m => m.TasksComponent) },
       { path: 'calendar', loadComponent: () => import('./features/calendar/calendar.component').then(m => m.CalendarComponent) },
@@ -24,7 +23,9 @@ export const routes: Routes = [
       { path: 'voice', loadComponent: () => import('./features/voice/voice.component').then(m => m.VoiceComponent) },
       { path: 'teams', loadComponent: () => import('./features/teams/teams.component').then(m => m.TeamsComponent) },
       { path: 'settings', loadComponent: () => import('./features/settings/settings.component').then(m => m.SettingsComponent) },
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ]
   },
-  { path: '**', redirectTo: 'dashboard' }
+  { path: '', loadComponent: () => import('./features/landing/landing.component').then(m => m.LandingComponent), pathMatch: 'full' },
+  { path: '**', redirectTo: '' }
 ];
