@@ -22,6 +22,9 @@ using Microsoft.OpenApi.Models;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using AiAgentBackend.Services.Messaging;
 using AiAgentBackend.Services.Cache;
+using AiAgentBackend.Services.PushNotification;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.Primitives; // Add this for StringValues
 using StackExchange.Redis;
 
@@ -289,6 +292,9 @@ builder.Services.AddScoped<IMessagingService, MessagingService>();
 // Command Orchestrator (depends on messaging)
 builder.Services.AddScoped<ICommandOrchestrator, CommandOrchestrator>();
 
+// Push Notification Service
+builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
+
 // Background Jobs
 builder.Services.AddScoped<ReminderJob>();
 builder.Services.AddScoped<GmailPollingJob>();
@@ -428,6 +434,29 @@ if (hasDatabase)
 else
 {
     Console.WriteLine("⚠️ No database configured — skipping DB initialization");
+}
+
+// Firebase initialization (non-critical — skip gracefully if not configured)
+try
+{
+    var firebaseConfigPath = Environment.GetEnvironmentVariable("FIREBASE_CONFIG")
+                            ?? Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
+    if (!string.IsNullOrEmpty(firebaseConfigPath) && FirebaseApp.DefaultInstance == null)
+    {
+        FirebaseApp.Create(new AppOptions
+        {
+            Credential = GoogleCredential.FromFile(firebaseConfigPath)
+        });
+        Console.WriteLine("✅ Firebase initialized for push notifications");
+    }
+    else if (string.IsNullOrEmpty(firebaseConfigPath))
+    {
+        Console.WriteLine("ℹ️ Firebase not configured — push notifications disabled (set FIREBASE_CONFIG or GOOGLE_APPLICATION_CREDENTIALS)");
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"⚠️ Firebase initialization failed ({ex.Message}) — push notifications disabled");
 }
 
 // Middleware pipeline - CORRECT ORDER IS CRITICAL

@@ -134,6 +134,14 @@ export class ApiService {
     return this.http.post<{ message: string }>(`${this.api}/api/Messaging/send-test`, { message });
   }
 
+  // Push Notifications
+  registerDeviceToken(token: string, platform: string) {
+    return this.http.post(`${this.api}/api/push/register`, { token, platform });
+  }
+  unregisterDeviceToken(token: string) {
+    return this.http.post(`${this.api}/api/push/unregister`, { token });
+  }
+
   // Health
   checkHealth(): Observable<any> {
     return this.http.get(`${this.api}/health/real-time`);

@@ -26,6 +26,7 @@ namespace AiAgentBackend.Data
         public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
         public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
         public DbSet<UserMessagingPreference> UserMessagingPreferences => Set<UserMessagingPreference>();
+        public DbSet<DeviceToken> DeviceTokens => Set<DeviceToken>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -164,6 +165,13 @@ namespace AiAgentBackend.Data
                     .WithMany()
                     .HasForeignKey(ae => ae.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<DeviceToken>(entity =>
+            {
+                entity.HasIndex(dt => dt.UserId);
+                entity.HasIndex(dt => dt.Token).IsUnique();
+                entity.HasIndex(dt => dt.IsActive);
             });            
         }
     }

@@ -44,6 +44,7 @@
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
     <PackageReference Include="System.Drawing.Common" Version="9.0.9" />
     <PackageReference Include="StackExchange.Redis" Version="2.8.16" />
+    <PackageReference Include="FirebaseAdmin" Version="3.1.0" />
 
     <!-- Health checks and swagger annotations -->
     <PackageReference Include="AspNetCore.HealthChecks.UI" Version="8.0.1" />
