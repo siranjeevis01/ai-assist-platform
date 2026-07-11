@@ -10,7 +10,10 @@ import { ToastService } from '../../shared/toast/toast.service';
   standalone: true,
   imports: [NgIf, FormsModule, RouterLink],
   template: `
-    <div class="auth-page">
+    <div class="auth-container">
+      <a routerLink="/" class="back-home">
+        <span class="material-icons">arrow_back</span> Back to Home
+      </a>
       <div class="auth-card">
         <div class="auth-header">
           <h1>AI Agent</h1>

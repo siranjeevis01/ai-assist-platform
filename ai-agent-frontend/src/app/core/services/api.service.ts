@@ -249,4 +249,9 @@ export class ApiService {
   deleteTeam(id: number): Observable<any> {
     return this.http.delete(`${this.api}/api/Teams/${id}`);
   }
+
+  // Analytics
+  getAnalytics(): Observable<any> {
+    return this.http.get(`${this.api}/api/Users/analytics`);
+  }
 }

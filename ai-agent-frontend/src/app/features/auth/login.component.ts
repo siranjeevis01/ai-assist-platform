@@ -10,6 +10,9 @@ import { AuthService } from '../../core/services/auth.service';
   imports: [FormsModule, RouterLink, NgIf],
   template: `
     <div class="auth-container">
+      <a routerLink="/" class="back-home">
+        <span class="material-icons">arrow_back</span> Back to Home
+      </a>
       <div class="auth-card">
         <div class="auth-header">
           <h1>AI Agent</h1>

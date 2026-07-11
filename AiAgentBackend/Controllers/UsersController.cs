@@ -228,6 +228,83 @@ public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest r
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
+
+        [HttpGet("analytics")]
+        public async Task<IActionResult> GetAnalytics()
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (userId == 0) return Unauthorized();
+
+                var now = DateTime.UtcNow;
+                var startOfWeek = now.AddDays(-(int)now.DayOfWeek);
+                var startOfMonth = new DateTime(now.Year, now.Month, 1);
+                var thirtyDaysAgo = now.AddDays(-30);
+
+                var taskStats = new
+                {
+                    Total = await _db.Tasks.CountAsync(t => t.UserId == userId),
+                    Completed = await _db.Tasks.CountAsync(t => t.UserId == userId && t.Status == "Done"),
+                    InProgress = await _db.Tasks.CountAsync(t => t.UserId == userId && t.Status == "In Progress"),
+                    ToDo = await _db.Tasks.CountAsync(t => t.UserId == userId && t.Status == "To Do"),
+                    ThisWeek = await _db.Tasks.CountAsync(t => t.UserId == userId && t.CreatedAt >= startOfWeek),
+                    ThisMonth = await _db.Tasks.CountAsync(t => t.UserId == userId && t.CreatedAt >= startOfMonth)
+                };
+
+                var eventStats = new
+                {
+                    Total = await _db.Events.CountAsync(e => e.UserId == userId),
+                    Upcoming = await _db.Events.CountAsync(e => e.UserId == userId && e.StartUtc >= now),
+                    ThisWeek = await _db.Events.CountAsync(e => e.UserId == userId && e.StartUtc >= startOfWeek),
+                    ThisMonth = await _db.Events.CountAsync(e => e.UserId == userId && e.StartUtc >= startOfMonth)
+                };
+
+                var docStats = new
+                {
+                    Total = await _db.Documents.CountAsync(d => d.UserId == userId),
+                    TotalSize = await _db.Documents.Where(d => d.UserId == userId).SumAsync(d => d.SizeBytes)
+                };
+
+                var teamCount = await _db.TeamMembers.CountAsync(tm => tm.UserId == userId);
+
+                var automationStats = new
+                {
+                    Total = await _db.AutomationRules.CountAsync(a => a.UserId == userId),
+                    Active = await _db.AutomationRules.CountAsync(a => a.UserId == userId && a.IsActive),
+                    TotalRuns = await _db.AutomationRules.Where(a => a.UserId == userId).SumAsync(a => a.RunCount)
+                };
+
+                var messageStats = new
+                {
+                    Total = await _db.Messages.CountAsync(m => m.UserId == userId),
+                    ThisWeek = await _db.Messages.CountAsync(m => m.UserId == userId && m.CreatedAt >= startOfWeek)
+                };
+
+                var recentActivity = await _db.Tasks
+                    .Where(t => t.UserId == userId)
+                    .OrderByDescending(t => t.CreatedAt)
+                    .Take(5)
+                    .Select(t => new { t.Title, t.Status, t.CreatedAt, Type = "task" })
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    Tasks = taskStats,
+                    Events = eventStats,
+                    Documents = docStats,
+                    Teams = teamCount,
+                    Automation = automationStats,
+                    Messages = messageStats,
+                    RecentActivity = recentActivity
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving analytics");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
     }
 
     public class UpdateProfileRequest
