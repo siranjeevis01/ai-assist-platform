@@ -189,6 +189,61 @@ namespace AiAgentBackend.Controllers
                     {
                         new { type = "create_task", config = new Dictionary<string, string> { ["title"] = "Weekly review and planning", ["description"] = "Auto-generated weekly task", ["due_date"] = "end_of_week" }, order = 0 }
                     }
+                },
+                new
+                {
+                    name = "Weather Alert → Telegram",
+                    description = "Get weather alerts sent to Telegram every morning",
+                    triggerType = "schedule",
+                    triggerConfig = new Dictionary<string, string> { ["cron"] = "0 7 * * *" },
+                    actions = new[]
+                    {
+                        new { type = "send_notification", config = new Dictionary<string, string> { ["channel"] = "telegram", ["message"] = "Today's weather forecast:\n{weather_summary}\nTemperature: {temperature}\nHumidity: {humidity}" }, order = 0 }
+                    }
+                },
+                new
+                {
+                    name = "Inactivity Alert",
+                    description = "Remind you if no tasks completed in 3 days",
+                    triggerType = "schedule",
+                    triggerConfig = new Dictionary<string, string> { ["cron"] = "0 18 * * *" },
+                    actions = new[]
+                    {
+                        new { type = "send_notification", config = new Dictionary<string, string> { ["message"] = "You haven't completed any tasks in 3 days. Time to get back on track!" }, order = 0 }
+                    }
+                },
+                new
+                {
+                    name = "Event Conflict Detector",
+                    description = "Alert when two events overlap",
+                    triggerType = "event_created",
+                    triggerConfig = new Dictionary<string, string>(),
+                    actions = new[]
+                    {
+                        new { type = "send_notification", config = new Dictionary<string, string> { ["message"] = "Schedule conflict detected: '{title}' overlaps with another event" }, order = 0 }
+                    }
+                },
+                new
+                {
+                    name = "Birthday Reminder",
+                    description = "Remind you of upcoming birthdays from contacts",
+                    triggerType = "schedule",
+                    triggerConfig = new Dictionary<string, string> { ["cron"] = "0 9 * * *" },
+                    actions = new[]
+                    {
+                        new { type = "send_notification", config = new Dictionary<string, string> { ["message"] = "Upcoming birthday: {contact_name} on {birthday_date}" }, order = 0 }
+                    }
+                },
+                new
+                {
+                    name = "Stale Task Cleanup",
+                    description = "Archive tasks completed more than 30 days ago",
+                    triggerType = "schedule",
+                    triggerConfig = new Dictionary<string, string> { ["cron"] = "0 2 * * 0" },
+                    actions = new[]
+                    {
+                        new { type = "send_notification", config = new Dictionary<string, string> { ["message"] = "Archived {archived_count} tasks completed more than 30 days ago" }, order = 0 }
+                    }
                 }
             };
 

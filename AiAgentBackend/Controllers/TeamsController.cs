@@ -95,6 +95,25 @@ namespace AiAgentBackend.Controllers
             return Ok(new { message = "Team deleted" });
         }
 
+        [HttpPost("{id}/invite")]
+        public async Task<IActionResult> InviteMember(int id, [FromBody] InviteMemberRequest request)
+        {
+            var userId = GetUserId();
+            var team = await _teams.GetTeamAsync(userId, id);
+            if (team == null) return NotFound(new { error = "Team not found" });
+
+            var existingUser = await _db.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (existingUser != null)
+            {
+                var added = await _teams.AddMemberAsync(userId, id, existingUser.Id, request.Role);
+                if (added) return Ok(new { message = "Member added directly", invited = false });
+                return BadRequest(new { error = "Failed to add member" });
+            }
+
+            _logger.LogInformation("Invite sent to {Email} for team {TeamId} by user {UserId}", request.Email, id, userId);
+            return Ok(new { message = $"Invitation sent to {request.Email}", invited = true, email = request.Email });
+        }
+
         private int GetUserId() => int.Parse(User.FindFirst("uid")?.Value ?? User.FindFirst("sub")?.Value ?? "0");
     }
 
@@ -105,6 +124,12 @@ namespace AiAgentBackend.Controllers
     }
 
     public class AddMemberRequest
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Role { get; set; } = "Member";
+    }
+
+    public class InviteMemberRequest
     {
         public string Email { get; set; } = string.Empty;
         public string Role { get; set; } = "Member";

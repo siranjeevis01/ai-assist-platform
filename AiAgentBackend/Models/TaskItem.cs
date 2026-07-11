@@ -29,6 +29,11 @@ namespace AiAgentBackend.Models
         public DateTime? LastReminderSentAt { get; set; }
         public DateTime? CompletedAt { get; set; }
         
+        [MaxLength(50)]
+        public string? RecurrenceRule { get; set; }
+        
+        public DateTime? RecurrenceNextUtc { get; set; }
+        
         // Navigation properties
         public virtual User User { get; set; } = null!;
     }

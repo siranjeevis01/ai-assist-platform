@@ -59,6 +59,16 @@
                 "glob": "firebase-messaging-sw.js",
                 "input": "src/",
                 "output": "/"
+              },
+              {
+                "glob": "manifest.json",
+                "input": "src/",
+                "output": "/"
+              },
+              {
+                "glob": "assets/**/*",
+                "input": "src/assets",
+                "output": "/assets"
               }
             ],
             "styles": [

@@ -254,4 +254,25 @@ export class ApiService {
   getAnalytics(): Observable<any> {
     return this.http.get(`${this.api}/api/Users/analytics`);
   }
+
+  // Export
+  exportTasks(format: string = 'json'): Observable<Blob> {
+    return this.http.get(`${this.api}/api/Export/tasks?format=${format}`, { responseType: 'blob' });
+  }
+  exportEvents(format: string = 'json'): Observable<Blob> {
+    return this.http.get(`${this.api}/api/Export/events?format=${format}`, { responseType: 'blob' });
+  }
+  exportAll(format: string = 'json'): Observable<Blob> {
+    return this.http.get(`${this.api}/api/Export/all?format=${format}`, { responseType: 'blob' });
+  }
+
+  // Gmail Undo
+  undoSendEmail(undoId: string): Observable<any> {
+    return this.http.post(`${this.api}/api/Gmail/undo/${undoId}`, {});
+  }
+
+  // Team Invite
+  inviteTeamMember(teamId: number, email: string, role: string): Observable<any> {
+    return this.http.post(`${this.api}/api/Teams/${teamId}/invite`, { email, role });
+  }
 }

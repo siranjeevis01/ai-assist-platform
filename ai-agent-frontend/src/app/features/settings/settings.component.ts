@@ -1,15 +1,16 @@
 import { Component, OnInit, effect, signal, OnDestroy } from '@angular/core';
-import { NgIf } from '@angular/common';
+import { NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../shared/toast/toast.service';
+import { ThemeService, Theme } from '../../core/services/theme.service';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [NgIf, FormsModule],
+  imports: [NgIf, NgFor, FormsModule],
   template: `
     <div class="settings-page">
       <div class="page-header">
@@ -117,6 +118,47 @@ import { ToastService } from '../../shared/toast/toast.service';
             </div>
           </form>
         </div>
+
+        <div class="settings-card">
+          <div class="card-header">
+            <span class="material-icons">palette</span>
+            <h2>Appearance</h2>
+          </div>
+          <div class="form-group">
+            <label>Theme</label>
+            <div class="theme-options">
+              <button *ngFor="let t of themes" class="theme-btn" [class.active]="themeService.currentTheme() === t.value" (click)="themeService.setTheme(t.value)">
+                <span class="material-icons">{{ t.icon }}</span>
+                {{ t.label }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <div class="card-header">
+            <span class="material-icons">download</span>
+            <h2>Data Export</h2>
+          </div>
+          <p class="export-desc">Download your data in JSON or CSV format</p>
+          <div class="export-actions">
+            <button class="btn btn-outline" (click)="exportData('tasks', 'json')">
+              <span class="material-icons">task_alt</span> Tasks (JSON)
+            </button>
+            <button class="btn btn-outline" (click)="exportData('tasks', 'csv')">
+              <span class="material-icons">table_chart</span> Tasks (CSV)
+            </button>
+            <button class="btn btn-outline" (click)="exportData('events', 'json')">
+              <span class="material-icons">event</span> Events (JSON)
+            </button>
+            <button class="btn btn-outline" (click)="exportData('events', 'csv')">
+              <span class="material-icons">table_chart</span> Events (CSV)
+            </button>
+            <button class="btn btn-primary export-all" (click)="exportData('all', 'json')">
+              <span class="material-icons">backup</span> Export Everything
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   `,
@@ -163,6 +205,22 @@ import { ToastService } from '../../shared/toast/toast.service';
     @media (max-width: 768px) {
       .settings-grid { grid-template-columns: 1fr; }
     }
+    .theme-options { display: flex; gap: 8px; flex-wrap: wrap; }
+    .theme-btn {
+      display: flex; align-items: center; gap: 6px; padding: 8px 16px;
+      background: #2a2a3e; border: 2px solid #333; border-radius: 10px;
+      color: #aaa; cursor: pointer; font-size: 14px; transition: all 0.2s;
+      &:hover { border-color: #667eea; color: #e0e0e0; }
+      &.active { border-color: #667eea; background: rgba(102,126,234,0.15); color: #e0e0e0; }
+      .material-icons { font-size: 18px; }
+    }
+    .export-desc { color: #888; font-size: 14px; margin-bottom: 16px; }
+    .export-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .btn-outline {
+      background: transparent; border: 1px solid #444; color: #aaa;
+      &:hover { border-color: #667eea; color: #e0e0e0; }
+    }
+    .export-all { width: 100%; justify-content: center; }
   `]
 })
 export class SettingsComponent implements OnInit, OnDestroy {
@@ -178,10 +236,17 @@ export class SettingsComponent implements OnInit, OnDestroy {
   pref = { workHours: '09:00-18:00', defaultDurationMinutes: 30, defaultBoard: 'default', defaultList: 'To Do', reminderPolicy: '30m-before' };
   messagingPlatform = 'telegram';
 
+  themes = [
+    { value: 'light' as Theme, label: 'Light', icon: 'light_mode' },
+    { value: 'dark' as Theme, label: 'Dark', icon: 'dark_mode' },
+    { value: 'system' as Theme, label: 'System', icon: 'computer' }
+  ];
+
   constructor(
     private api: ApiService,
     public auth: AuthService,
-    private toast: ToastService
+    private toast: ToastService,
+    public themeService: ThemeService
   ) {
     effect(() => {
       if (this.inited) return;
@@ -241,6 +306,24 @@ export class SettingsComponent implements OnInit, OnDestroy {
     this.subs.push(this.api.setMessagingPreference(this.messagingPlatform).subscribe({
       next: () => this.toast.success('Messaging preference saved'),
       error: () => this.toast.error('Failed to save preference')
+    }));
+  }
+
+  exportData(type: string, format: string): void {
+    const obs = type === 'all' ? this.api.exportAll(format) :
+                 type === 'tasks' ? this.api.exportTasks(format) :
+                 this.api.exportEvents(format);
+    this.subs.push(obs.subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${type}_export_${new Date().toISOString().split('T')[0]}.${format}`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.toast.success(`${type} exported successfully`);
+      },
+      error: () => this.toast.error(`Failed to export ${type}`)
     }));
   }
 }

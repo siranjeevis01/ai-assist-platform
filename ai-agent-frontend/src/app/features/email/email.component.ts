@@ -257,11 +257,21 @@ export class EmailComponent implements OnInit {
     if (!this.composeData.to || !this.composeData.subject || !this.composeData.body) return;
     this.sending.set(true);
     this.api.sendGmailEmail(this.composeData.to, this.composeData.subject, this.composeData.body).subscribe({
-      next: () => {
+      next: (res: any) => {
         this.showCompose.set(false);
         this.composeData = { to: '', subject: '', body: '' };
         this.sending.set(false);
         this.toast.success('Email sent');
+        if (res.undoId) {
+          setTimeout(() => {
+            if (confirm('Undo this email?')) {
+              this.api.undoSendEmail(res.undoId).subscribe({
+                next: () => this.toast.success('Undo noted'),
+                error: () => this.toast.error('Undo window expired')
+              });
+            }
+          }, 3000);
+        }
       },
       error: () => { this.sending.set(false); this.toast.error('Failed to send email'); }
     });

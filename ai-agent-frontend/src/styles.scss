@@ -189,3 +189,53 @@ body {
     margin-top: 24px;
   }
 }
+
+/* Dark Mode */
+.dark {
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --bg-card: #1e293b;
+  --bg-input: #334155;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --border-color: #334155;
+
+  body { background: #0f172a; color: #e2e8f0; }
+
+  .sidebar { background: #1e293b; border-right-color: #334155;
+    .nav-item { color: #94a3b8;
+      &:hover, &.active { background: #334155; color: #e2e8f0; }
+    }
+  }
+
+  .main-content { background: #0f172a; }
+
+  .page-header h1, h1, h2, h3, h4 { color: #e2e8f0; }
+  .page-header p, p { color: #94a3b8; }
+
+  .stat-card, .content-card, .mini-stat, .team-card, .rule-card, .template-card,
+  .doc-card, .modal, .settings-section, .integrations-grid .integration-card,
+  .automation-page .quick-start {
+    background: #1e2130; color: #e2e8f0; border-color: #334155;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+
+  input, textarea, select {
+    background: #1e2130 !important; color: #e2e8f0 !important; border-color: #475569 !important;
+    &::placeholder { color: #64748b !important; }
+    &:focus { border-color: #667eea !important; box-shadow: 0 0 0 3px rgba(102,126,234,0.2) !important; }
+  }
+
+  .email-row, .activity-item { border-bottom-color: #334155; }
+
+  .btn-secondary, .btn-outline {
+    background: #1e2130; color: #e2e8f0; border-color: #475569;
+    &:hover { background: #334155; border-color: #667eea; color: #e2e8f0; }
+  }
+
+  ::-webkit-scrollbar-thumb { background: #475569; &:hover { background: #64748b; } }
+
+  .email-sidebar { background: #1e2130; border-right-color: #334155; }
+  .email-detail { background: #0f172a; }
+  .email-header { border-bottom-color: #334155; }
+}
