@@ -3,6 +3,7 @@ using AiAgentBackend.Services.Integrations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using System.Security.Claims;
 
 namespace AiAgentBackend.Controllers
@@ -14,11 +15,13 @@ namespace AiAgentBackend.Controllers
     {
         private readonly ApplicationDbContext _db;
         private readonly ILogger<CalendarController> _logger;
+        private readonly IMemoryCache _cache;
 
-        public CalendarController(ApplicationDbContext db, ILogger<CalendarController> logger)
+        public CalendarController(ApplicationDbContext db, ILogger<CalendarController> logger, IMemoryCache cache)
         {
             _db = db;
             _logger = logger;
+            _cache = cache;
         }
 
         private int GetUserId()
@@ -33,13 +36,20 @@ namespace AiAgentBackend.Controllers
             var userId = GetUserId();
             if (userId == 0) return Unauthorized();
 
+            var cacheKey = $"cal_status:{userId}";
+            if (_cache.TryGetValue(cacheKey, out object? cached))
+                return Ok(cached);
+
             var hasGoogle = await _db.ProviderTokens
                 .AnyAsync(t => t.UserId == userId && t.Provider == "Google");
 
-            return Ok(new {
+            var result = new {
                 connected = hasGoogle,
                 provider = hasGoogle ? "Google Calendar" : "Local"
-            });
+            };
+
+            _cache.Set(cacheKey, result, TimeSpan.FromSeconds(30));
+            return Ok(result);
         }
 
         [HttpGet("sync")]

@@ -10,14 +10,16 @@ namespace AiAgentBackend.Middleware
 
         private static readonly Dictionary<string, (int Limit, int WindowSeconds)> Limits = new()
         {
-            ["/api/Messages/send"] = (20, 60),
-            ["/api/Gmail"] = (30, 60),
-            ["/api/Google"] = (60, 60),
-            ["/api/Calendar"] = (30, 60),
-            ["/api/Trello"] = (30, 60),
-            ["/api/Voice"] = (10, 60),
-            ["/api/Messaging/status"] = (30, 60),
-            ["default"] = (60, 60)
+            ["/api/Messages/send"] = (30, 60),
+            ["/api/Gmail"] = (60, 60),
+            ["/api/Google"] = (120, 60),
+            ["/api/Calendar"] = (120, 60),
+            ["/api/Trello"] = (60, 60),
+            ["/api/Voice"] = (20, 60),
+            ["/api/Messaging/status"] = (60, 60),
+            ["/api/Users/stats"] = (60, 60),
+            ["/api/Users/analytics"] = (60, 60),
+            ["default"] = (120, 60)
         };
 
         public UserRateLimitMiddleware(RequestDelegate next, IMemoryCache cache, ILogger<UserRateLimitMiddleware> logger)
@@ -87,7 +89,11 @@ namespace AiAgentBackend.Middleware
             if (path.StartsWith("/api/Messages")) return "messages";
             if (path.StartsWith("/api/Gmail")) return "gmail";
             if (path.StartsWith("/api/Google")) return "google";
+            if (path.StartsWith("/api/Calendar")) return "calendar";
+            if (path.StartsWith("/api/Trello")) return "trello";
             if (path.StartsWith("/api/Voice")) return "voice";
+            if (path.StartsWith("/api/Messaging")) return "messaging";
+            if (path.StartsWith("/api/Users")) return "users";
             return "general";
         }
     }

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Caching.Memory;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Security.Claims;
@@ -20,17 +21,20 @@ namespace AiAgentBackend.Controllers
         private readonly ApplicationDbContext _db;
         private readonly ILogger<GoogleAuthController> _logger;
         private readonly IConfiguration _configuration;
+        private readonly IMemoryCache _cache;
 
         public GoogleAuthController(
             IOptions<GoogleOptions> options, 
             ApplicationDbContext db,
             ILogger<GoogleAuthController> logger,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IMemoryCache cache)
         {
             _options = options.Value;
             _db = db;
             _logger = logger;
             _configuration = configuration;
+            _cache = cache;
         }
 
         private string BuildGoogleAuthUrl(int userId)
@@ -256,6 +260,10 @@ namespace AiAgentBackend.Controllers
                     return Unauthorized();
                 var userId = int.Parse(userIdClaim);
 
+                var cacheKey = $"google_status:{userId}";
+                if (_cache.TryGetValue(cacheKey, out object? cached))
+                    return Ok(cached);
+
                 var token = await _db.ProviderTokens
                     .FirstOrDefaultAsync(t => t.UserId == userId && t.Provider == "Google");
 
@@ -264,12 +272,15 @@ namespace AiAgentBackend.Controllers
 
                 var isExpired = token.ExpiresAt.HasValue && token.ExpiresAt <= DateTime.UtcNow;
 
-                return Ok(new
+                var result = new
                 {
                     connected = !isExpired,
                     expiresAt = token.ExpiresAt,
                     scopes = token.Scope?.Split(' ')
-                });
+                };
+
+                _cache.Set(cacheKey, result, TimeSpan.FromSeconds(30));
+                return Ok(result);
             }
             catch (Exception ex)
             {
