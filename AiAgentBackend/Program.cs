@@ -201,7 +201,9 @@ if (useRedis)
 {
     try
     {
-        var redis = ConnectionMultiplexer.Connect(redisConnection!);
+        // Parse Redis URL or redis-cli command into StackExchange.Redis connection string
+        var redisConnStr = EnvironmentHelper.ParseRedisConnectionString(redisConnection!);
+        var redis = ConnectionMultiplexer.Connect(redisConnStr);
         builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
         Console.WriteLine("✅ Redis caching configured");
     }
@@ -398,8 +400,6 @@ if (hasDatabase)
             
             if (canConnect)
             {
-                // Use MigrateAsync instead of EnsureCreatedAsync for proper migration support
-                // EnsureCreatedAsync doesn't work with EF Core migrations
                 try
                 {
                     var pendingMigrations = await db.Database.GetPendingMigrationsAsync();
@@ -417,12 +417,11 @@ if (hasDatabase)
                 }
                 catch (Exception migrateEx)
                 {
-                    // If migrations fail (e.g., first time with no migration files),
-                    // fall back to EnsureCreatedAsync for initial setup
-                    Console.WriteLine($"⚠️ MigrateAsync failed ({migrateEx.Message}), falling back to EnsureCreatedAsync");
-                    await db.Database.EnsureCreatedAsync();
-                    Console.WriteLine("✅ Database tables verified (EnsureCreatedAsync)");
+                    Console.WriteLine($"⚠️ MigrateAsync failed ({migrateEx.Message}), applying schema manually");
                 }
+
+                // Ensure all tables exist (handles DB created by EnsureCreatedAsync before new models were added)
+                await EnsureAllTablesExistAsync(db);
             }
         }
     }
@@ -804,6 +803,29 @@ app.Run();
 
 // ============ SUPPORTING CLASSES ============
 
+// Ensures all tables from the current DbContext model exist in MySQL
+static async Task EnsureAllTablesExistAsync(ApplicationDbContext db)
+{
+    var sqlStatements = new[]
+    {
+        @"CREATE TABLE IF NOT EXISTS `Teams` (`Id` INT NOT NULL AUTO_INCREMENT, `OwnerId` INT NOT NULL, `Name` VARCHAR(100) NOT NULL, `Description` VARCHAR(500) NULL, `CreatedAt` DATETIME(6) NOT NULL, `UpdatedAt` DATETIME(6) NOT NULL, PRIMARY KEY (`Id`), INDEX `IX_Teams_OwnerId` (`OwnerId`), CONSTRAINT `FK_Teams_Users_OwnerId` FOREIGN KEY (`OwnerId`) REFERENCES `Users`(`Id`) ON DELETE RESTRICT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        @"CREATE TABLE IF NOT EXISTS `TeamMembers` (`Id` INT NOT NULL AUTO_INCREMENT, `TeamId` INT NOT NULL, `UserId` INT NOT NULL, `Role` VARCHAR(20) NOT NULL DEFAULT 'Member', `JoinedAt` DATETIME(6) NOT NULL, PRIMARY KEY (`Id`), UNIQUE INDEX `IX_TeamMembers_TeamId_UserId` (`TeamId`, `UserId`), INDEX `IX_TeamMembers_UserId` (`UserId`), CONSTRAINT `FK_TeamMembers_Teams_TeamId` FOREIGN KEY (`TeamId`) REFERENCES `Teams`(`Id`) ON DELETE CASCADE, CONSTRAINT `FK_TeamMembers_Users_UserId` FOREIGN KEY (`UserId`) REFERENCES `Users`(`Id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        @"CREATE TABLE IF NOT EXISTS `AuditEntries` (`Id` INT NOT NULL AUTO_INCREMENT, `UserId` INT NOT NULL, `Entity` VARCHAR(100) NOT NULL, `Action` VARCHAR(50) NOT NULL, `Details` TEXT NULL, `IpAddress` VARCHAR(50) NULL, `CreatedAt` DATETIME(6) NOT NULL, PRIMARY KEY (`Id`), INDEX `IX_AuditEntries_UserId` (`UserId`), INDEX `IX_AuditEntries_CreatedAt` (`CreatedAt`), CONSTRAINT `FK_AuditEntries_Users_UserId` FOREIGN KEY (`UserId`) REFERENCES `Users`(`Id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        @"CREATE TABLE IF NOT EXISTS `ConversationHistory` (`Id` INT NOT NULL AUTO_INCREMENT, `UserId` INT NOT NULL, `UserMessage` LONGTEXT NOT NULL, `BotResponse` LONGTEXT NOT NULL, `Intent` VARCHAR(50) NULL, `CreatedAt` DATETIME(6) NOT NULL, PRIMARY KEY (`Id`), INDEX `IX_ConversationHistory_UserId` (`UserId`), INDEX `IX_ConversationHistory_CreatedAt` (`CreatedAt`), INDEX `IX_ConversationHistory_UserId_CreatedAt` (`UserId`, `CreatedAt`), CONSTRAINT `FK_ConversationHistory_Users_UserId` FOREIGN KEY (`UserId`) REFERENCES `Users`(`Id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        @"CREATE TABLE IF NOT EXISTS `AutomationRules` (`Id` INT NOT NULL AUTO_INCREMENT, `UserId` INT NOT NULL, `Name` VARCHAR(100) NOT NULL, `Description` VARCHAR(500) NULL, `TriggerType` VARCHAR(50) NOT NULL, `TriggerConfig` TEXT NOT NULL, `ActionsJson` TEXT NOT NULL, `IsActive` TINYINT(1) NOT NULL DEFAULT 1, `RunCount` INT NOT NULL DEFAULT 0, `LastRunAt` DATETIME(6) NULL, `CreatedAt` DATETIME(6) NOT NULL, `UpdatedAt` DATETIME(6) NOT NULL, PRIMARY KEY (`Id`), INDEX `IX_AutomationRules_UserId` (`UserId`), INDEX `IX_AutomationRules_IsActive` (`IsActive`), CONSTRAINT `FK_AutomationRules_Users_UserId` FOREIGN KEY (`UserId`) REFERENCES `Users`(`Id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        @"CREATE TABLE IF NOT EXISTS `Documents` (`Id` INT NOT NULL AUTO_INCREMENT, `UserId` INT NOT NULL, `FileName` VARCHAR(255) NOT NULL, `ContentType` VARCHAR(100) NOT NULL, `SizeBytes` BIGINT NOT NULL, `StoragePath` VARCHAR(500) NOT NULL, `ExtractedText` LONGTEXT NULL, `Summary` TEXT NULL, `EmbeddingStatus` VARCHAR(20) NOT NULL DEFAULT 'pending', `CreatedAt` DATETIME(6) NOT NULL, `UpdatedAt` DATETIME(6) NOT NULL, PRIMARY KEY (`Id`), INDEX `IX_Documents_UserId` (`UserId`), INDEX `IX_Documents_CreatedAt` (`CreatedAt`), CONSTRAINT `FK_Documents_Users_UserId` FOREIGN KEY (`UserId`) REFERENCES `Users`(`Id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        @"CREATE TABLE IF NOT EXISTS `DocumentChunks` (`Id` INT NOT NULL AUTO_INCREMENT, `DocumentId` INT NOT NULL, `ChunkIndex` INT NOT NULL, `Content` TEXT NOT NULL, `EmbeddingVector` TEXT NULL, `TokenCount` INT NOT NULL, `CreatedAt` DATETIME(6) NOT NULL, PRIMARY KEY (`Id`), INDEX `IX_DocumentChunks_DocumentId` (`DocumentId`), CONSTRAINT `FK_DocumentChunks_Documents_DocumentId` FOREIGN KEY (`DocumentId`) REFERENCES `Documents`(`Id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        @"CREATE TABLE IF NOT EXISTS `DeviceTokens` (`Id` INT NOT NULL AUTO_INCREMENT, `UserId` LONGTEXT NOT NULL, `Token` LONGTEXT NOT NULL, `Platform` VARCHAR(20) NOT NULL DEFAULT 'web', `CreatedAt` DATETIME(6) NOT NULL, `LastUsedAt` DATETIME(6) NOT NULL, `IsActive` TINYINT(1) NOT NULL DEFAULT 1, PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    };
+    var created = 0;
+    foreach (var sql in sqlStatements)
+    {
+        try { await db.Database.ExecuteSqlRawAsync(sql); created++; }
+        catch { }
+    }
+    if (created > 0) Console.WriteLine($"✅ Ensured {created} table(s) exist");
+}
+
 // Environment Helper Class (FIXED NULL REFERENCE ISSUES)
 public static class EnvironmentHelper
 {
@@ -853,6 +875,32 @@ public static class EnvironmentHelper
         var varName = value[2..^1];
         var envValue = Environment.GetEnvironmentVariable(varName);
         return !string.IsNullOrEmpty(envValue) ? envValue : value;
+    }
+
+    public static string ParseRedisConnectionString(string input)
+    {
+        // Already a StackExchange.Redis connection string (contains comma-separated key=value pairs)
+        if (input.Contains('=') && !input.StartsWith("redis://") && !input.StartsWith("redis-cli"))
+            return input;
+
+        // Handle "redis-cli -u redis://..." format
+        if (input.StartsWith("redis-cli"))
+        {
+            var uriMatch = System.Text.RegularExpressions.Regex.Match(input, @"redis://(\S+)");
+            if (uriMatch.Success) input = uriMatch.Groups[1].Value;
+        }
+
+        // Handle "redis://user:pass@host:port" format
+        if (input.StartsWith("default@") || input.Contains('@'))
+        {
+            var userInfo = input.Split('@')[0];
+            var hostPart = input.Split('@')[1];
+            var password = userInfo.Replace("default:", "").Trim();
+            var host = hostPart.TrimEnd('/');
+            return $"{host},password={password},ssl=True,abortConnect=False";
+        }
+
+        return input;
     }
 }
 
