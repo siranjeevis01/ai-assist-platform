@@ -11,9 +11,12 @@ namespace AiAgentBackend.Middleware
         private static readonly Dictionary<string, (int Limit, int WindowSeconds)> Limits = new()
         {
             ["/api/Messages/send"] = (20, 60),
-            ["/api/Gmail"] = (10, 60),
-            ["/api/Google"] = (5, 60),
+            ["/api/Gmail"] = (30, 60),
+            ["/api/Google"] = (60, 60),
+            ["/api/Calendar"] = (30, 60),
+            ["/api/Trello"] = (30, 60),
             ["/api/Voice"] = (10, 60),
+            ["/api/Messaging/status"] = (30, 60),
             ["default"] = (60, 60)
         };
 

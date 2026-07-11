@@ -195,15 +195,14 @@ namespace AiAgentBackend.Controllers
 
                 _logger.LogInformation("Google connected successfully for user {UserId}", userId);
 
-                // Redirect to Angular frontend
                 var frontendUrl = Environment.GetEnvironmentVariable("CORS_ORIGINS")?.Split(',')?.FirstOrDefault()?.Trim() ?? "http://localhost:4200";
-                return Redirect($"{frontendUrl}/dashboard?googleConnected=true&message=Google%20integration%20successful");
+                return Redirect($"{frontendUrl}/integrations?googleConnected=true&message=Google%20integration%20successful");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in Google OAuth callback");
                 var frontendUrl = Environment.GetEnvironmentVariable("CORS_ORIGINS")?.Split(',')?.FirstOrDefault()?.Trim() ?? "http://localhost:4200";
-                return Redirect($"{frontendUrl}/dashboard?googleConnected=false&error=OAuth%20failed");
+                return Redirect($"{frontendUrl}/integrations?googleConnected=false&error=OAuth%20failed");
             }
         }
 

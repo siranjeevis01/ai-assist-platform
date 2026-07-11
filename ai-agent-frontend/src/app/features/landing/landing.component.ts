@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
+import { Meta, Title } from '@angular/platform-browser';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-landing',
@@ -739,4 +741,27 @@ import { RouterLink } from '@angular/router';
     }
   `]
 })
-export class LandingComponent {}
+export class LandingComponent implements OnInit {
+  constructor(
+    private auth: AuthService,
+    private router: Router,
+    private meta: Meta,
+    private title: Title
+  ) {}
+
+  ngOnInit(): void {
+    this.title.setTitle('AI Agent — Your Intelligent Work Operating System');
+    this.meta.addTag({ name: 'description', content: 'Automate tasks, manage your calendar, handle emails, and collaborate with your team — all through natural conversation with AI.' });
+    this.meta.addTag({ name: 'keywords', content: 'AI assistant, task management, calendar, email, automation, productivity, free AI agent' });
+    this.meta.addTag({ property: 'og:title', content: 'AI Agent — Your Intelligent Work Operating System' });
+    this.meta.addTag({ property: 'og:description', content: 'Automate tasks, manage your calendar, handle emails, and collaborate with your team — all through natural conversation with AI.' });
+    this.meta.addTag({ property: 'og:type', content: 'website' });
+    this.meta.addTag({ name: 'twitter:card', content: 'summary_large_image' });
+    this.meta.addTag({ name: 'twitter:title', content: 'AI Agent — Your Intelligent Work Operating System' });
+    this.meta.addTag({ name: 'twitter:description', content: 'Automate tasks, manage your calendar, handle emails, and collaborate with your team — all through natural conversation with AI.' });
+
+    if (this.auth.isAuthenticated()) {
+      this.router.navigate(['/dashboard']);
+    }
+  }
+}

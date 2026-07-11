@@ -7,6 +7,9 @@ export const routes: Routes = [
   { path: 'register', loadComponent: () => import('./features/auth/register.component').then(m => m.RegisterComponent) },
   { path: 'forgot-password', loadComponent: () => import('./features/auth/forgot-password.component').then(m => m.ForgotPasswordComponent) },
   { path: 'reset-password', loadComponent: () => import('./features/auth/reset-password.component').then(m => m.ResetPasswordComponent) },
+
+  { path: '', loadComponent: () => import('./features/landing/landing.component').then(m => m.LandingComponent), pathMatch: 'full' },
+
   {
     path: '',
     component: LayoutComponent,
@@ -23,9 +26,8 @@ export const routes: Routes = [
       { path: 'voice', loadComponent: () => import('./features/voice/voice.component').then(m => m.VoiceComponent) },
       { path: 'teams', loadComponent: () => import('./features/teams/teams.component').then(m => m.TeamsComponent) },
       { path: 'settings', loadComponent: () => import('./features/settings/settings.component').then(m => m.SettingsComponent) },
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ]
   },
-  { path: '', loadComponent: () => import('./features/landing/landing.component').then(m => m.LandingComponent), pathMatch: 'full' },
+
   { path: '**', redirectTo: '' }
 ];

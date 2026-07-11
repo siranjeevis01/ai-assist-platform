@@ -190,15 +190,8 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
 
   connectGoogle(): void {
     this.subs.push(this.api.getGoogleConnectUrl().subscribe(res => {
-      window.open(res.url, '_blank');
+      window.location.href = res.url;
     }));
-    const checkFocus = () => {
-      if (document.hasFocus()) {
-        this.loadStatus();
-        window.removeEventListener('focus', checkFocus);
-      }
-    };
-    window.addEventListener('focus', checkFocus);
   }
 
   disconnectGoogle(): void {

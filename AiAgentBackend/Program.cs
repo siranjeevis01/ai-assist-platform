@@ -2,6 +2,7 @@
 using AiAgentBackend.Hubs;
 using Hangfire.Dashboard;
 using System.Text;
+using System.Security.Cryptography;
 using AiAgentBackend.Configuration;
 using AiAgentBackend.Middleware;
 using AiAgentBackend.Data;
@@ -656,12 +657,22 @@ app.MapGet("/messaging-status", async (IMessagingService messagingService) =>
     return Results.Content(html, "text/html");
 });
 
-// Webhook endpoints
-app.MapPost("/api/telegram/webhook", async (HttpContext context, ITelegramService telegramService) =>
+// Webhook endpoints with signature verification
+app.MapPost("/api/telegram/webhook", async (HttpContext context, ITelegramService telegramService, IConfiguration config) =>
 {
     try
     {
-        // Read the request body
+        var secretToken = config["Messaging:Telegram:SecretToken"];
+        if (!string.IsNullOrEmpty(secretToken))
+        {
+            if (!context.Request.Headers.TryGetValue("X-Telegram-Bot-Api-Secret-Token", out var receivedToken)
+                || receivedToken != secretToken)
+            {
+                Console.WriteLine("Telegram webhook: invalid secret token");
+                return Results.StatusCode(403);
+            }
+        }
+
         using var reader = new StreamReader(context.Request.Body);
         var body = await reader.ReadToEndAsync();
         
@@ -687,11 +698,38 @@ app.MapPost("/api/telegram/webhook", async (HttpContext context, ITelegramServic
     }
 });
 
-app.MapPost("/api/whatsapp/webhook", async (HttpContext context, IWhatsAppCloudService whatsAppService) =>
+app.MapPost("/api/whatsapp/webhook", async (HttpContext context, IWhatsAppCloudService whatsAppService, IConfiguration config) =>
 {
     try
     {
-        // Read the request body
+        var appSecret = config["Messaging:WhatsApp:AppSecret"];
+        if (!string.IsNullOrEmpty(appSecret))
+        {
+            if (!context.Request.Headers.TryGetValue("X-Hub-Signature-256", out var signature)
+                || string.IsNullOrEmpty(signature))
+            {
+                Console.WriteLine("WhatsApp webhook: missing signature");
+                return Results.StatusCode(403);
+            }
+
+            using var ms = new MemoryStream();
+            await context.Request.Body.CopyToAsync(ms);
+            var bodyBytes = ms.ToArray();
+            var bodyForVerify = System.Text.Encoding.UTF8.GetString(bodyBytes);
+
+            using var hmac = new System.Security.Cryptography.HMACSHA256(System.Text.Encoding.UTF8.GetBytes(appSecret));
+            var hash = hmac.ComputeHash(bodyBytes);
+            var expected = "sha256=" + Convert.ToHexString(hash).ToLowerInvariant();
+
+            if (signature != expected)
+            {
+                Console.WriteLine("WhatsApp webhook: invalid signature");
+                return Results.StatusCode(403);
+            }
+
+            context.Request.Body = new MemoryStream(bodyBytes);
+        }
+
         using var reader = new StreamReader(context.Request.Body);
         var body = await reader.ReadToEndAsync();
         
