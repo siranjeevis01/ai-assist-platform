@@ -37,8 +37,13 @@ namespace AiAgentBackend.Services.Messaging
             _httpClient.Timeout = TimeSpan.FromSeconds(30);
         }
 
-        public Task<MessagingPlatformStatus> GetStatusAsync()
+        public async Task<MessagingPlatformStatus> GetStatusAsync()
         {
+            if (!_isInitialized)
+            {
+                await InitializeAsync();
+            }
+
             var status = new MessagingPlatformStatus
             {
                 IsConnected = _isInitialized,
@@ -51,7 +56,7 @@ namespace AiAgentBackend.Services.Messaging
                 status.ErrorMessage = "WhatsApp Cloud API not configured";
             }
 
-            return Task.FromResult(status);
+            return status;
         }
 
         public async Task<bool> InitializeAsync()

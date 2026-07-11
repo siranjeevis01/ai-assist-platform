@@ -34,8 +34,13 @@ namespace AiAgentBackend.Services.Messaging
             _logger = logger;
         }
 
-public Task<MessagingPlatformStatus> GetStatusAsync()
+public async Task<MessagingPlatformStatus> GetStatusAsync()
 {
+    if (!_isInitialized)
+    {
+        await InitializeAsync();
+    }
+
     var status = new MessagingPlatformStatus
     {
         IsConnected = _isInitialized,
@@ -49,7 +54,7 @@ public Task<MessagingPlatformStatus> GetStatusAsync()
         status.ErrorMessage = "Telegram bot not configured"; 
     }
 
-    return Task.FromResult(status);
+    return status;
 }
 
         public async Task<bool> InitializeAsync()
