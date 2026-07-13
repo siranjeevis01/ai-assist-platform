@@ -29,12 +29,14 @@ jobs:
 
       - name: Restore
         run: dotnet restore
+        working-directory: AiAgentBackend
 
       - name: Build
         run: dotnet build --no-restore --configuration Release
+        working-directory: AiAgentBackend
 
       - name: Test
-        run: dotnet test AiAgentBackend.Tests/AiAgentBackend.Tests.csproj --no-build --configuration Release --verbosity normal
+        run: dotnet test AiAgentBackend.Tests/AiAgentBackend.Tests.csproj --configuration Release --verbosity normal
 
   build-frontend:
     name: Build Frontend
