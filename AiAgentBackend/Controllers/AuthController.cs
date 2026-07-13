@@ -247,9 +247,15 @@ namespace AiAgentBackend.Controllers
 
                 await _db.SaveChangesAsync();
 
-                await _emailService.SendResetPasswordAsync(user.Email, otp);
-
-                _logger.LogInformation("Password reset OTP sent to: {Email}", user.Email);
+                try
+                {
+                    await _emailService.SendResetPasswordAsync(user.Email, otp);
+                    _logger.LogInformation("Password reset OTP sent to: {Email}", user.Email);
+                }
+                catch (Exception emailEx)
+                {
+                    _logger.LogError(emailEx, "Failed to send password reset email to {Email} — OTP is still valid", user.Email);
+                }
 
                 return Ok(new { message = "If the email exists, a reset link has been sent" });
             }

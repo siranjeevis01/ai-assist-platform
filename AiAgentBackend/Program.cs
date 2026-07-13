@@ -134,6 +134,7 @@ builder.Services.Configure<GoogleOptions>(builder.Configuration.GetSection("Goog
 builder.Services.Configure<SmtpOptions>(builder.Configuration.GetSection("Smtp"));
 builder.Services.Configure<TrelloOptions>(builder.Configuration.GetSection("Trello"));
 builder.Services.Configure<OpenAIOptions>(builder.Configuration.GetSection("OpenAI"));
+builder.Services.Configure<AiAgentBackend.Services.Auth.PasswordOptions>(builder.Configuration.GetSection("Password"));
 
 // Resolve ${VAR_NAME} placeholders from environment variables
 builder.Services.PostConfigure<MessagingOptions>(options =>
@@ -535,23 +536,28 @@ app.UseStaticFiles();
 
 // Serve Angular SPA from dist folder (eliminates need for ng serve)
 var angularDistPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "ai-agent-frontend", "dist", "ai-agent-frontend", "browser");
-if (Directory.Exists(angularDistPath))
+var dockerAngularPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+var spaPath = Directory.Exists(angularDistPath) ? angularDistPath 
+            : Directory.Exists(dockerAngularPath) ? dockerAngularPath 
+            : null;
+
+if (spaPath != null)
 {
     app.UseStaticFiles(new StaticFileOptions
     {
-        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(angularDistPath),
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(spaPath),
         RequestPath = ""
     });
     // SPA fallback for client-side routing
     app.MapFallbackToFile("index.html", new StaticFileOptions
     {
-        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(angularDistPath)
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(spaPath)
     });
-    Log.Information("Serving Angular SPA from: {AngularDistPath}", angularDistPath);
+    Log.Information("Serving Angular SPA from: {SpaPath}", spaPath);
 }
 else
 {
-    Log.Information("Angular SPA dist not found at: {AngularDistPath} — run `npm run build` in ai-agent-frontend", angularDistPath);
+    Log.Information("Angular SPA dist not found — run `npm run build` in ai-agent-frontend");
 }
 
 // Authentication & Authorization
@@ -886,6 +892,7 @@ static async Task EnsureAllTablesExistAsync(ApplicationDbContext db)
 {
     var createStatements = new[]
     {
+        @"CREATE TABLE IF NOT EXISTS `Preferences` (`Id` INT NOT NULL AUTO_INCREMENT, `UserId` INT NOT NULL, `WorkHours` VARCHAR(50) NOT NULL DEFAULT '09:00-18:00', `DefaultDurationMinutes` INT NOT NULL DEFAULT 30, `DefaultBoard` VARCHAR(100) NOT NULL DEFAULT 'default', `DefaultList` VARCHAR(100) NOT NULL DEFAULT 'To Do', `ReminderPolicy` VARCHAR(50) NOT NULL DEFAULT '30m-before', PRIMARY KEY (`Id`), UNIQUE INDEX `IX_Preferences_UserId` (`UserId`), CONSTRAINT `FK_Preferences_Users_UserId` FOREIGN KEY (`UserId`) REFERENCES `Users`(`Id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         @"CREATE TABLE IF NOT EXISTS `Teams` (`Id` INT NOT NULL AUTO_INCREMENT, `OwnerId` INT NOT NULL, `Name` VARCHAR(100) NOT NULL, `Description` VARCHAR(500) NULL, `CreatedAt` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`Id`), INDEX `IX_Teams_OwnerId` (`OwnerId`), CONSTRAINT `FK_Teams_Users_OwnerId` FOREIGN KEY (`OwnerId`) REFERENCES `Users`(`Id`) ON DELETE RESTRICT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         @"CREATE TABLE IF NOT EXISTS `TeamMembers` (`Id` INT NOT NULL AUTO_INCREMENT, `TeamId` INT NOT NULL, `UserId` INT NOT NULL, `Role` VARCHAR(20) NOT NULL DEFAULT 'Member', `JoinedAt` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`Id`), UNIQUE INDEX `IX_TeamMembers_TeamId_UserId` (`TeamId`, `UserId`), INDEX `IX_TeamMembers_UserId` (`UserId`), CONSTRAINT `FK_TeamMembers_Teams_TeamId` FOREIGN KEY (`TeamId`) REFERENCES `Teams`(`Id`) ON DELETE CASCADE, CONSTRAINT `FK_TeamMembers_Users_UserId` FOREIGN KEY (`UserId`) REFERENCES `Users`(`Id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         @"CREATE TABLE IF NOT EXISTS `AuditEntries` (`Id` INT NOT NULL AUTO_INCREMENT, `UserId` INT NOT NULL, `TeamId` INT NULL, `EntityType` VARCHAR(100) NOT NULL, `EntityId` INT NULL, `Action` VARCHAR(50) NOT NULL, `Details` TEXT NULL, `IpAddress` VARCHAR(50) NULL, `CreatedAt` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`Id`), INDEX `IX_AuditEntries_UserId` (`UserId`), INDEX `IX_AuditEntries_CreatedAt` (`CreatedAt`), CONSTRAINT `FK_AuditEntries_Users_UserId` FOREIGN KEY (`UserId`) REFERENCES `Users`(`Id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",

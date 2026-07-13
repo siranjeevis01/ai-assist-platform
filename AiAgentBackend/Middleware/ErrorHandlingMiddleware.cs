@@ -52,8 +52,14 @@ namespace AiAgentBackend.Middleware
 
         private Task HandleExceptionAsync(HttpContext context, Exception exception, string correlationId, long elapsedMs)
         {
-            _logger.LogError(exception, "[{CorrelationId}] Unhandled exception for {Method} {Path} after {Elapsed}ms",
-                correlationId, context.Request.Method, context.Request.Path, elapsedMs);
+            _logger.LogError(exception, "[{CorrelationId}] Unhandled {ExceptionType} for {Method} {Path} after {Elapsed}ms: {ErrorMessage}",
+                correlationId, exception.GetType().Name, context.Request.Method, context.Request.Path, elapsedMs, exception.Message);
+
+            if (exception.InnerException != null)
+            {
+                _logger.LogError(exception.InnerException, "[{CorrelationId}] Inner exception: {InnerMessage}",
+                    correlationId, exception.InnerException.Message);
+            }
 
             var code = HttpStatusCode.InternalServerError;
             var message = "An unexpected error occurred";
@@ -74,10 +80,11 @@ namespace AiAgentBackend.Middleware
                     code = HttpStatusCode.NotFound;
                     message = "Resource not found";
                     break;
-                case DbUpdateException:
+                case DbUpdateException dbEx:
                     code = HttpStatusCode.BadRequest;
                     message = "Database update failed";
-                    details = "There was an error saving data to the database";
+                    details = dbEx.InnerException?.Message ?? "There was an error saving data to the database";
+                    _logger.LogError(dbEx, "[{CorrelationId}] Database error: {DbError}", correlationId, details);
                     break;
                 case TimeoutException:
                     code = HttpStatusCode.RequestTimeout;

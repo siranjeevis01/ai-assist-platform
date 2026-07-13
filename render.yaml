@@ -94,6 +94,9 @@ services:
         value: "587"
       - key: Smtp__Username
         value: siranjeevicad01@gmail.com
+      - key: Smtp__Password
+        sync: false
+        # Gmail app password (generate at https://myaccount.google.com/apppasswords)
       - key: Smtp__EnableSsl
         value: "true"
     healthCheckPath: /health
