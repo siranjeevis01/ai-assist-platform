@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -20,6 +21,8 @@ namespace AiAgentBackend.Services.Messaging
         
         private bool _isInitialized = false;
 
+        private static readonly ConcurrentDictionary<string, bool> _disconnectedPlatforms = new();
+
         public WhatsAppCloudService(
             HttpClient httpClient,
             IOptions<MessagingOptions> options,
@@ -40,6 +43,16 @@ namespace AiAgentBackend.Services.Messaging
 
         public async Task<MessagingPlatformStatus> GetStatusAsync()
         {
+            if (_disconnectedPlatforms.ContainsKey("whatsapp"))
+            {
+                return new MessagingPlatformStatus
+                {
+                    IsConnected = false,
+                    Status = "disconnected",
+                    LastChecked = DateTime.UtcNow
+                };
+            }
+
             if (!_isInitialized)
             {
                 await InitializeAsync();
@@ -82,6 +95,7 @@ namespace AiAgentBackend.Services.Messaging
                 if (response.IsSuccessStatusCode)
                 {
                     _isInitialized = true;
+                    _disconnectedPlatforms.TryRemove("whatsapp", out _);
                     _logger.LogInformation("WhatsApp Cloud API initialized successfully for phone number: {PhoneNumberId}", 
                         _options.Value.WhatsApp.PhoneNumberId);
                     return true;
@@ -442,6 +456,7 @@ namespace AiAgentBackend.Services.Messaging
 
 public Task DisconnectAsync()
 {
+    _disconnectedPlatforms["whatsapp"] = true;
     _isInitialized = false;
     _logger.LogInformation("WhatsApp Cloud API service disconnected");
     return Task.CompletedTask;

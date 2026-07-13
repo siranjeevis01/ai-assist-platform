@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -21,6 +22,8 @@ namespace AiAgentBackend.Services.Messaging
         private bool _isInitialized = false;
         private string? _botUsername;
 
+        private static readonly ConcurrentDictionary<string, bool> _disconnectedPlatforms = new();
+
         public TelegramService(
             HttpClient httpClient,
             IOptions<MessagingOptions> options,
@@ -37,6 +40,16 @@ namespace AiAgentBackend.Services.Messaging
 
 public async Task<MessagingPlatformStatus> GetStatusAsync()
 {
+    if (_disconnectedPlatforms.ContainsKey("telegram"))
+    {
+        return new MessagingPlatformStatus
+        {
+            IsConnected = false,
+            Status = "disconnected",
+            LastChecked = DateTime.UtcNow
+        };
+    }
+
     if (!_isInitialized)
     {
         await InitializeAsync();
@@ -80,6 +93,7 @@ public async Task<MessagingPlatformStatus> GetStatusAsync()
                     var result = doc.RootElement.GetProperty("result");
                     _botUsername = result.GetProperty("username").GetString();
                     _isInitialized = true;
+                    _disconnectedPlatforms.TryRemove("telegram", out _);
 
                     _logger.LogInformation("Telegram bot initialized successfully: @{BotUsername}", _botUsername);
                     return true;
@@ -475,6 +489,7 @@ public async Task<MessagingPlatformStatus> GetStatusAsync()
 
 public Task DisconnectAsync()
 {
+    _disconnectedPlatforms["telegram"] = true;
     _isInitialized = false;
     _botUsername = null;
     _logger.LogInformation("Telegram service disconnected");
