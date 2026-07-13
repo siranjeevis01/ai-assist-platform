@@ -106,9 +106,7 @@ jobs:
         working-directory: ai-agent-frontend
 
       - name: Deploy to Firebase Hosting
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          channelId: live
-          projectId: aiagent-siranjeevis01
+        run: |
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" | base64 -d > /tmp/firebase-sa.json
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/firebase-sa.json
+          npx firebase-tools@latest deploy --only hosting --project aiagent-siranjeevis01
