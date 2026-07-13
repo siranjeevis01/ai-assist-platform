@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea"/>
+      <stop offset="100%" style="stop-color:#764ba2"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background with rounded corners -->
+  <rect width="192" height="192" rx="24" ry="24" fill="url(#bgGradient)"/>
+  
+  <!-- AI Brain/Circuit Icon -->
+  <g transform="translate(96, 96)" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Main brain shape -->
+    <path d="M0,-45 C25,-45 40,-30 40,-10 C40,5 30,15 25,25 C22,32 20,40 20,50 L-20,50 C-20,40 -22,32 -25,25 C-30,15 -40,5 -40,-10 C-40,-30 -25,-45 0,-45 Z"/>
+    
+    <!-- Central line -->
+    <line x1="0" y1="-40" x2="0" y2="50"/>
+    
+    <!-- Left hemisphere circuits -->
+    <path d="M-20,-30 C-35,-25 -35,-10 -25,-5"/>
+    <path d="M-30,-15 C-40,-5 -35,10 -20,15"/>
+    <path d="M-15,0 C-30,5 -30,25 -10,30"/>
+    
+    <!-- Right hemisphere circuits -->
+    <path d="M20,-30 C35,-25 35,-10 25,-5"/>
+    <path d="M30,-15 C40,-5 35,10 20,15"/>
+    <path d="M15,0 C30,5 30,25 10,30"/>
+    
+    <!-- Circuit nodes -->
+    <circle cx="-35" cy="-20" r="4" fill="white"/>
+    <circle cx="-40" cy="0" r="4" fill="white"/>
+    <circle cx="-25" cy="20" r="4" fill="white"/>
+    <circle cx="35" cy="-20" r="4" fill="white"/>
+    <circle cx="40" cy="0" r="4" fill="white"/>
+    <circle cx="25" cy="20" r="4" fill="white"/>
+    
+    <!-- Top antenna/signal -->
+    <path d="M-8,-55 C-8,-65 8,-65 8,-55" stroke-width="3"/>
+    <circle cx="0" cy="-60" r="3" fill="white"/>
+    
+    <!-- Pulse waves -->
+    <path d="M-15,-60 C-15,-70 15,-70 15,-60" stroke-width="2" opacity="0.6"/>
+    <path d="M-22,-60 C-22,-75 22,-75 22,-60" stroke-width="2" opacity="0.4"/>
+  </g>
+</svg>
