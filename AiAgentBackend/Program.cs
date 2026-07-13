@@ -892,8 +892,18 @@ static async Task EnsureAllTablesExistAsync(ApplicationDbContext db)
         @"CREATE TABLE IF NOT EXISTS `DocumentChunks` (`Id` INT NOT NULL AUTO_INCREMENT, `DocumentId` INT NOT NULL, `ChunkIndex` INT NOT NULL, `Content` TEXT NOT NULL, `EmbeddingVector` TEXT NULL, `TokenCount` INT NOT NULL, `CreatedAt` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`Id`), INDEX `IX_DocumentChunks_DocumentId` (`DocumentId`), CONSTRAINT `FK_DocumentChunks_Documents_DocumentId` FOREIGN KEY (`DocumentId`) REFERENCES `Documents`(`Id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         @"CREATE TABLE IF NOT EXISTS `DeviceTokens` (`Id` INT NOT NULL AUTO_INCREMENT, `UserId` VARCHAR(255) NOT NULL, `Token` LONGTEXT NOT NULL, `Platform` VARCHAR(20) NOT NULL DEFAULT 'web', `CreatedAt` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), `LastUsedAt` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), `IsActive` TINYINT(1) NOT NULL DEFAULT 1, PRIMARY KEY (`Id`), INDEX `IX_DeviceTokens_UserId` (`UserId`), INDEX `IX_DeviceTokens_IsActive` (`IsActive`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     };
+
+    var alterStatements = new[]
+    {
+        @"ALTER TABLE `Tasks` ADD COLUMN `RecurrenceRule` VARCHAR(50) NULL",
+        @"ALTER TABLE `Tasks` ADD COLUMN `RecurrenceNextUtc` DATETIME(6) NULL"
+    };
     var count = 0;
     foreach (var sql in createStatements)
+    {
+        try { await db.Database.ExecuteSqlRawAsync(sql); count++; } catch { }
+    }
+    foreach (var sql in alterStatements)
     {
         try { await db.Database.ExecuteSqlRawAsync(sql); count++; } catch { }
     }
