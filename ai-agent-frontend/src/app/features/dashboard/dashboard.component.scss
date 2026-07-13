@@ -6,19 +6,19 @@
 .dashboard-header {
   margin-bottom: 24px;
 
-  h1 { margin: 0 0 8px; font-size: 28px; color: #333; }
-  p { margin: 0; color: #888; font-size: 15px; }
+  h1 { margin: 0 0 8px; font-size: 28px; color: var(--text-primary); }
+  p { margin: 0; color: var(--text-secondary); font-size: 15px; }
 }
 
 .loading-state {
   text-align: center;
   padding: 60px 20px;
-  color: #888;
+  color: var(--text-secondary);
 
   .spinner {
     width: 40px; height: 40px;
-    border: 3px solid #e0e0e0;
-    border-top-color: #667eea;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--primary-color);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
     margin: 0 auto 16px;
@@ -35,7 +35,7 @@
 }
 
 .stat-card {
-  background: white;
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 20px;
   display: flex;
@@ -60,30 +60,30 @@
   .stat-content {
     flex: 1;
     min-width: 120px;
-    h3 { margin: 0 0 4px; font-size: 24px; font-weight: 700; color: #333; }
-    p { margin: 0 0 8px; color: #888; font-size: 13px; }
+    h3 { margin: 0 0 4px; font-size: 24px; font-weight: 700; color: var(--text-primary); }
+    p { margin: 0 0 8px; color: var(--text-secondary); font-size: 13px; }
 
     .stat-details {
       display: flex; gap: 12px; font-size: 12px; flex-wrap: wrap;
 
-      .completed, .upcoming { color: #43e97b; }
-      .in-progress, .this-week { color: #667eea; }
+      .completed, .upcoming { color: var(--success-color); }
+      .in-progress, .this-week { color: var(--primary-color); }
       .synced { color: #4facfe; }
-      .disconnected { color: #e74c3c; }
-      .positive { color: #43e97b; }
+      .disconnected { color: var(--danger-color); }
+      .positive { color: var(--success-color); }
     }
   }
 
   .stat-bar {
     width: 100%;
     height: 4px;
-    background: #f0f0f0;
+    background: var(--border-color);
     border-radius: 2px;
     overflow: hidden;
 
     .stat-bar-fill {
       height: 100%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: var(--primary-gradient);
       border-radius: 2px;
       transition: width 0.6s ease;
     }
@@ -99,7 +99,7 @@
   .mini-stat {
     flex: 1;
     min-width: 120px;
-    background: white;
+    background: var(--bg-card);
     border-radius: 10px;
     padding: 16px;
     display: flex;
@@ -107,9 +107,9 @@
     gap: 12px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 
-    .material-icons { color: #667eea; font-size: 22px; }
-    strong { display: block; font-size: 20px; color: #333; margin-bottom: 2px; }
-    span { font-size: 12px; color: #888; }
+    .material-icons { color: var(--primary-color); font-size: 22px; }
+    strong { display: block; font-size: 20px; color: var(--text-primary); margin-bottom: 2px; }
+    span { font-size: 12px; color: var(--text-secondary); }
   }
 }
 
@@ -123,26 +123,26 @@
 }
 
 .content-card {
-  background: white;
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 
-  h3 { margin: 0 0 16px; font-size: 16px; color: #555; font-weight: 600; }
+  h3 { margin: 0 0 16px; font-size: 16px; color: var(--text-muted); font-weight: 600; }
 }
 
 .empty-state {
   text-align: center;
   padding: 32px 20px;
-  color: #999;
+  color: var(--text-icon);
   font-size: 14px;
 
-  .material-icons { font-size: 40px; color: #ddd; margin-bottom: 8px; display: block; }
+  .material-icons { font-size: 40px; color: var(--border-color); margin-bottom: 8px; display: block; }
   p { margin: 8px 0 12px; }
 
   .add-btn {
     padding: 8px 16px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--primary-gradient);
     color: white;
     border: none;
     border-radius: 8px;
@@ -157,13 +157,13 @@
   display: flex;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-color);
 
   &:last-child { border-bottom: none; }
 
   .task-checkbox {
     input[type="checkbox"] {
-      width: 18px; height: 18px; cursor: pointer; accent-color: #667eea; margin-top: 2px;
+      width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary-color); margin-top: 2px;
     }
   }
 
@@ -171,19 +171,19 @@
     flex: 1;
 
     .task-title {
-      font-weight: 500; color: #333; margin-bottom: 4px;
-      &.completed { text-decoration: line-through; color: #999; }
+      font-weight: 500; color: var(--text-primary); margin-bottom: 4px;
+      &.completed { text-decoration: line-through; color: var(--text-icon); }
     }
 
     .task-meta {
       display: flex; gap: 8px; font-size: 12px; align-items: center; flex-wrap: wrap;
 
-      .due-date { color: #888; }
+      .due-date { color: var(--text-secondary); }
       .status-badge {
         padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;
-        &.to-do, &.To\ Do { background: #f0f2ff; color: #667eea; }
-        &.in-progress, &.In\ Progress { background: #fff8e1; color: #ffa726; }
-        &.done, &.Done { background: #e8f5e9; color: #43e97b; }
+        &.to-do, &.To\ Do { background: var(--bg-hover); color: var(--primary-color); }
+        &.in-progress, &.In\ Progress { background: #fff8e1; color: var(--warning-color); }
+        &.done, &.Done { background: #e8f5e9; color: var(--success-color); }
       }
     }
   }
@@ -193,17 +193,17 @@
   display: flex;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-color);
 
   &:last-child { border-bottom: none; }
 
   .event-time {
-    font-size: 13px; color: #667eea; font-weight: 600; min-width: 70px;
+    font-size: 13px; color: var(--primary-color); font-weight: 600; min-width: 70px;
   }
 
   .event-content {
-    .event-title { font-weight: 500; color: #333; margin-bottom: 2px; }
-    .event-location { font-size: 12px; color: #888; }
+    .event-title { font-weight: 500; color: var(--text-primary); margin-bottom: 2px; }
+    .event-location { font-size: 12px; color: var(--text-secondary); }
   }
 }
 
@@ -214,7 +214,7 @@
       align-items: center;
       gap: 12px;
       padding: 10px 0;
-      border-bottom: 1px solid #f0f0f0;
+      border-bottom: 1px solid var(--border-color);
 
       &:last-child { border-bottom: none; }
 
@@ -222,35 +222,35 @@
         width: 36px;
         height: 36px;
         border-radius: 8px;
-        background: #f5f5ff;
+        background: var(--bg-hover);
         display: flex;
         align-items: center;
         justify-content: center;
 
-        .material-icons { font-size: 18px; color: #667eea; }
+        .material-icons { font-size: 18px; color: var(--primary-color); }
       }
 
       .activity-content {
         flex: 1;
-        .activity-title { font-weight: 500; color: #333; font-size: 14px; }
+        .activity-title { font-weight: 500; color: var(--text-primary); font-size: 14px; }
         .activity-status {
           display: inline-block;
           margin-left: 8px;
           font-size: 11px;
           padding: 2px 6px;
           border-radius: 4px;
-          &.done { background: #e8f5e9; color: #43e97b; }
-          &.pending { background: #f0f2ff; color: #667eea; }
+          &.done { background: #e8f5e9; color: var(--success-color); }
+          &.pending { background: var(--bg-hover); color: var(--primary-color); }
         }
       }
 
-      .activity-time { font-size: 12px; color: #999; white-space: nowrap; }
+      .activity-time { font-size: 12px; color: var(--text-icon); white-space: nowrap; }
     }
   }
 }
 
 .quick-actions {
-  h3 { margin: 0 0 16px; font-size: 16px; color: #555; }
+  h3 { margin: 0 0 16px; font-size: 16px; color: var(--text-muted); }
 
   .action-buttons {
     display: flex; gap: 12px; flex-wrap: wrap;
@@ -258,18 +258,18 @@
     .action-btn {
       display: flex; align-items: center; gap: 8px;
       padding: 12px 20px;
-      background: white;
-      border: 1px solid #e0e0e0;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
       border-radius: 10px;
       cursor: pointer;
       font-size: 14px;
       font-weight: 500;
-      color: #555;
+      color: var(--text-muted);
       transition: all 0.2s;
 
       &:hover {
-        border-color: #667eea;
-        color: #667eea;
+        border-color: var(--primary-color);
+        color: var(--primary-color);
         box-shadow: 0 2px 8px rgba(102,126,234,0.1);
       }
 

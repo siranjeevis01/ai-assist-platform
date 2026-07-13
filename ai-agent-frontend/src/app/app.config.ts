@@ -9,6 +9,9 @@ import { GlobalErrorHandler } from './core/handlers/global-error.handler';
 
 function initPushNotifications(push: PushNotificationService) {
   return () => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/firebase-messaging-sw.js').catch(() => {});
+    }
     const token = localStorage.getItem('access_token');
     if (token) {
       push.initialize();

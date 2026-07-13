@@ -1,20 +1,20 @@
 .calendar-page { max-width: 1000px; margin: 0 auto; }
 
 .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;
-  .header-content { h1 { margin: 0 0 8px; font-size: 28px; color: #333; } p { margin: 0; color: #888; } }
+  .header-content { h1 { margin: 0 0 8px; font-size: 28px; color: var(--text-primary); } p { margin: 0; color: var(--text-secondary); } }
 }
 
 .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-.btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; &:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(102,126,234,0.3); } }
-.btn-secondary { background: #f0f0f0; color: #555; &:hover { background: #e0e0e0; } }
+.btn-primary { background: var(--primary-gradient); color: white; &:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(102,126,234,0.3); } }
+.btn-secondary { background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border-color); &:hover { background: var(--bg-hover); } }
 
 .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-.modal { background: white; border-radius: 16px; padding: 32px; width: 90%; max-width: 520px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-  h2 { margin: 0 0 24px; } small { font-size: 12px; color: #888; }
+.modal { background: var(--bg-card); border-radius: 16px; padding: 32px; width: 90%; max-width: 520px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  h2 { margin: 0 0 24px; color: var(--text-primary); } small { font-size: 12px; color: var(--text-secondary); }
 }
 .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px;
-  label { font-weight: 500; color: #444; font-size: 14px; }
-  input, select, textarea { padding: 12px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; &:focus { border-color: #667eea; } }
+  label { font-weight: 500; color: var(--text-primary); font-size: 14px; }
+  input, select, textarea { padding: 12px 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; outline: none; background: var(--bg-input); color: var(--text-primary); &:focus { border-color: var(--primary-color); } }
   textarea { resize: vertical; }
 }
 .form-row { display: flex; gap: 16px; .form-group { flex: 1; } }
@@ -22,35 +22,35 @@
 
 .calendar-content { display: flex; flex-direction: column; gap: 32px; }
 .events-section {
-  h2 { font-size: 20px; color: #444; margin: 0 0 16px; }
+  h2 { font-size: 20px; color: var(--text-primary); margin: 0 0 16px; }
 }
 .events-list { display: flex; flex-direction: column; gap: 8px; }
 
-.loading-state { text-align: center; padding: 60px; color: #888;
-  .spinner { width: 40px; height: 40px; border: 3px solid #e0e0e0; border-top-color: #667eea; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+.loading-state { text-align: center; padding: 60px; color: var(--text-secondary);
+  .spinner { width: 40px; height: 40px; border: 3px solid var(--border-color); border-top-color: var(--primary-color); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-.empty-state { text-align: center; padding: 60px 20px; color: #999; p { margin-bottom: 16px; } }
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text-icon); p { margin-bottom: 16px; } }
 
-.event-card { display: flex; gap: 16px; background: white; border-radius: 12px; padding: 16px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: box-shadow 0.2s;
+.event-card { display: flex; gap: 16px; background: var(--bg-card); border-radius: 12px; padding: 16px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: box-shadow 0.2s;
   &:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
   &.past { opacity: 0.7; }
 
   .event-time { min-width: 140px;
-    .event-date { font-weight: 600; color: #667eea; font-size: 14px; }
-    .event-time-display { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #888; margin-top: 4px; }
+    .event-date { font-weight: 600; color: var(--primary-color); font-size: 14px; }
+    .event-time-display { display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
   }
   .event-content { flex: 1;
-    h3 { margin: 0 0 4px; font-size: 16px; color: #333; }
-    .event-description { font-size: 13px; color: #777; margin: 0 0 8px; }
+    h3 { margin: 0 0 4px; font-size: 16px; color: var(--text-primary); }
+    .event-description { font-size: 13px; color: var(--text-secondary); margin: 0 0 8px; }
     .event-details { display: flex; gap: 12px; flex-wrap: wrap; }
-    .event-location { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #888; }
+    .event-location { display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--text-secondary); }
   }
   .event-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
-    .event-status { font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: 6px; background: #f0f2ff; color: #667eea;
-      &.completed { background: #e8f5e9; color: #43e97b; }
+    .event-status { font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: 6px; background: var(--bg-hover); color: var(--primary-color);
+      &.completed { background: #e8f5e9; color: var(--success-color); }
     }
-    .icon-btn { background: none; border: none; cursor: pointer; padding: 6px; border-radius: 6px; color: #999; &:hover { background: #fff5f5; color: #e74c3c; } .material-icons { font-size: 20px; } }
+    .icon-btn { background: none; border: none; cursor: pointer; padding: 6px; border-radius: 6px; color: var(--text-icon); &:hover { background: var(--bg-danger-hover); color: var(--danger-color); } .material-icons { font-size: 20px; } }
   }
 }
 

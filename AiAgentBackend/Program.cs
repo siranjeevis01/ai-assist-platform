@@ -106,11 +106,11 @@ if (hasDatabase)
         options.HeartbeatInterval = TimeSpan.FromSeconds(30);
     });
     
-    Console.WriteLine("✅ Database and Hangfire configured");
+    Log.Information("Database and Hangfire configured");
 }
 else
 {
-    Console.WriteLine("⚠️ No database configured — running without persistence (NLP/chat still works)");
+    Log.Warning("No database configured — running without persistence (NLP/chat still works)");
     // Register a dummy DbContext so DI doesn't fail
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
     {
@@ -164,9 +164,25 @@ builder.Services.PostConfigure<TrelloOptions>(options =>
     options.DefaultBoardId = EnvironmentHelper.ResolveEnvPlaceholder(options.DefaultBoardId);
 });
 
+builder.Services.PostConfigure<JwtOptions>(options =>
+{
+    if (string.IsNullOrEmpty(options.Key))
+        options.Key = Environment.GetEnvironmentVariable("JWT_SECRET_KEY");
+    if (string.IsNullOrEmpty(options.Key) && EnvironmentHelper.IsDevelopment)
+        options.Key = "dev-only-insecure-key-1234567890123456";
+    if (string.IsNullOrEmpty(options.Key))
+        throw new InvalidOperationException("JWT signing key not configured. Set Jwt__Key or JWT_SECRET_KEY environment variable.");
+});
+
 // Auth / JWT
 var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>() ?? new JwtOptions();
-var jwtKey = jwtOptions.Key ?? "super-secure-32-char-key-1234567890123456";
+var jwtKey = jwtOptions.Key;
+if (string.IsNullOrEmpty(jwtKey))
+    jwtKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY");
+if (string.IsNullOrEmpty(jwtKey) && EnvironmentHelper.IsDevelopment)
+    jwtKey = "dev-only-insecure-key-1234567890123456";
+if (string.IsNullOrEmpty(jwtKey))
+    throw new InvalidOperationException("JWT signing key not configured. Set Jwt__Key or JWT_SECRET_KEY environment variable.");
 var jwtIssuer = jwtOptions.Issuer ?? "AiAgentBackend";
 var jwtAudience = jwtOptions.Audience ?? "AiAgentUsers";
 
@@ -220,17 +236,17 @@ if (useRedis)
         var redisConnStr = EnvironmentHelper.ParseRedisConnectionString(redisConnection!);
         var redis = ConnectionMultiplexer.Connect(redisConnStr);
         builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
-        Console.WriteLine("✅ Redis caching configured");
+        Log.Information("Redis caching configured");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"⚠️ Redis connection failed ({ex.Message}), falling back to in-memory cache");
+        Log.Warning(ex, "Redis connection failed, falling back to in-memory cache");
         useRedis = false;
     }
 }
 if (!useRedis)
 {
-    Console.WriteLine("ℹ️ Using in-memory cache (set REDIS_CONNECTION env var to enable Redis)");
+    Log.Information("Using in-memory cache (set REDIS_CONNECTION env var to enable Redis)");
 }
 
 // Rate limiting
@@ -400,18 +416,18 @@ if (hasDatabase)
             using var cmd = tempConn.CreateCommand();
             cmd.CommandText = $"CREATE DATABASE IF NOT EXISTS `{databaseName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
             await cmd.ExecuteNonQueryAsync();
-            Console.WriteLine($"✅ Database '{databaseName}' verified/created");
+            Log.Information("Database {DatabaseName} verified/created", databaseName);
         }
         catch (Exception dbEx)
         {
-            Console.WriteLine($"⚠️ Could not auto-create database: {dbEx.Message}");
+            Log.Warning(dbEx, "Could not auto-create database");
         }
         
         using (var scope = app.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var canConnect = await db.Database.CanConnectAsync();
-            Console.WriteLine($"✅ Database connection: {(canConnect ? "Success" : "Failed")}");
+            Log.Information("Database connection: {ConnectionResult}", canConnect ? "Success" : "Failed");
             
             if (canConnect)
             {
@@ -421,18 +437,18 @@ if (hasDatabase)
                     var pendingList = pendingMigrations.ToList();
                     if (pendingList.Any())
                     {
-                        Console.WriteLine($"📦 Applying {pendingList.Count} pending migration(s): {string.Join(", ", pendingList)}");
+                        Log.Information("Applying {Count} pending migration(s): {Migrations}", pendingList.Count, string.Join(", ", pendingList));
                         await db.Database.MigrateAsync();
-                        Console.WriteLine("✅ All migrations applied successfully");
+                        Log.Information("All migrations applied successfully");
                     }
                     else
                     {
-                        Console.WriteLine("✅ Database is up to date - no pending migrations");
+                        Log.Information("Database is up to date - no pending migrations");
                     }
                 }
                 catch (Exception migrateEx)
                 {
-                    Console.WriteLine($"⚠️ MigrateAsync failed ({migrateEx.Message}), applying schema manually");
+                    Log.Warning(migrateEx, "MigrateAsync failed, applying schema manually");
                 }
 
                 // Ensure all tables exist (handles DB created by EnsureCreatedAsync before new models were added)
@@ -442,12 +458,12 @@ if (hasDatabase)
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"❌ Database initialization failed: {ex.Message}");
+        Log.Error(ex, "Database initialization failed");
     }
 }
 else
 {
-    Console.WriteLine("⚠️ No database configured — skipping DB initialization");
+    Log.Warning("No database configured — skipping DB initialization");
 }
 
 // Firebase initialization (non-critical — skip gracefully if not configured)
@@ -461,16 +477,16 @@ try
         {
             Credential = GoogleCredential.FromFile(firebaseConfigPath)
         });
-        Console.WriteLine("✅ Firebase initialized for push notifications");
+        Log.Information("Firebase initialized for push notifications");
     }
     else if (string.IsNullOrEmpty(firebaseConfigPath))
     {
-        Console.WriteLine("ℹ️ Firebase not configured — push notifications disabled (set FIREBASE_CONFIG or GOOGLE_APPLICATION_CREDENTIALS)");
+        Log.Information("Firebase not configured — push notifications disabled (set FIREBASE_CONFIG or GOOGLE_APPLICATION_CREDENTIALS)");
     }
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"⚠️ Firebase initialization failed ({ex.Message}) — push notifications disabled");
+    Log.Warning(ex, "Firebase initialization failed — push notifications disabled");
 }
 
 // Middleware pipeline - CORRECT ORDER IS CRITICAL
@@ -483,30 +499,33 @@ app.UseCors("AllowFrontend");
 app.UseRateLimiter();
 app.UseMiddleware<UserRateLimitMiddleware>();
 
-// Swagger (enabled in both Development and Production for API docs)
-app.UseSwagger(c =>
+// Swagger (Development only)
+if (EnvironmentHelper.IsDevelopment)
 {
-    c.RouteTemplate = "swagger/{documentName}/swagger.json";
-    c.PreSerializeFilters.Add((swaggerDoc, httpReq) =>
+    app.UseSwagger(c =>
     {
-        var baseUrl = EnvironmentHelper.GetBaseUrl(builder.Configuration);
-        swaggerDoc.Servers = new List<OpenApiServer>
+        c.RouteTemplate = "swagger/{documentName}/swagger.json";
+        c.PreSerializeFilters.Add((swaggerDoc, httpReq) =>
         {
-            new OpenApiServer { Url = baseUrl }
-        };
+            var baseUrl = EnvironmentHelper.GetBaseUrl(builder.Configuration);
+            swaggerDoc.Servers = new List<OpenApiServer>
+            {
+                new OpenApiServer { Url = baseUrl }
+            };
+        });
     });
-});
 
-app.UseSwaggerUI(c =>
-{
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "AiAgentBackend v1");
-    c.RoutePrefix = "swagger";
-    c.DisplayRequestDuration();
-    c.EnableDeepLinking();
-    c.EnableFilter();
-    c.DocumentTitle = "AI Agent Backend API";
-    c.EnablePersistAuthorization();
-});
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "AiAgentBackend v1");
+        c.RoutePrefix = "swagger";
+        c.DisplayRequestDuration();
+        c.EnableDeepLinking();
+        c.EnableFilter();
+        c.DocumentTitle = "AI Agent Backend API";
+        c.EnablePersistAuthorization();
+    });
+}
 
 app.UseSerilogRequestLogging();
 app.UseStaticFiles();
@@ -525,11 +544,11 @@ if (Directory.Exists(angularDistPath))
     {
         FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(angularDistPath)
     });
-    Console.WriteLine($"✅ Serving Angular SPA from: {angularDistPath}");
+    Log.Information("Serving Angular SPA from: {AngularDistPath}", angularDistPath);
 }
 else
 {
-    Console.WriteLine($"ℹ️ Angular SPA dist not found at: {angularDistPath} — run `npm run build` in ai-agent-frontend");
+    Log.Information("Angular SPA dist not found at: {AngularDistPath} — run `npm run build` in ai-agent-frontend", angularDistPath);
 }
 
 // Authentication & Authorization
@@ -668,7 +687,7 @@ app.MapPost("/api/telegram/webhook", async (HttpContext context, ITelegramServic
             if (!context.Request.Headers.TryGetValue("X-Telegram-Bot-Api-Secret-Token", out var receivedToken)
                 || receivedToken != secretToken)
             {
-                Console.WriteLine("Telegram webhook: invalid secret token");
+                Log.Warning("Telegram webhook: invalid secret token");
                 return Results.StatusCode(403);
             }
         }
@@ -693,7 +712,7 @@ app.MapPost("/api/telegram/webhook", async (HttpContext context, ITelegramServic
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Telegram webhook error: {ex.Message}");
+        Log.Error(ex, "Telegram webhook error");
         return Results.StatusCode(500);
     }
 });
@@ -708,7 +727,7 @@ app.MapPost("/api/whatsapp/webhook", async (HttpContext context, IWhatsAppCloudS
             if (!context.Request.Headers.TryGetValue("X-Hub-Signature-256", out var signature)
                 || string.IsNullOrEmpty(signature))
             {
-                Console.WriteLine("WhatsApp webhook: missing signature");
+                Log.Warning("WhatsApp webhook: missing signature");
                 return Results.StatusCode(403);
             }
 
@@ -723,7 +742,7 @@ app.MapPost("/api/whatsapp/webhook", async (HttpContext context, IWhatsAppCloudS
 
             if (signature != expected)
             {
-                Console.WriteLine("WhatsApp webhook: invalid signature");
+                Log.Warning("WhatsApp webhook: invalid signature");
                 return Results.StatusCode(403);
             }
 
@@ -750,7 +769,7 @@ app.MapPost("/api/whatsapp/webhook", async (HttpContext context, IWhatsAppCloudS
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"WhatsApp webhook error: {ex.Message}");
+        Log.Error(ex, "WhatsApp webhook error");
         return Results.StatusCode(500);
     }
 });
@@ -835,25 +854,25 @@ if (hasDatabase)
                 Cron.Hourly
             );
 
-            Console.WriteLine("✅ Background jobs scheduled successfully");
+            Log.Information("Background jobs scheduled successfully");
         }
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"❌ Failed to schedule background jobs: {ex.Message}");
+        Log.Error(ex, "Failed to schedule background jobs");
     }
 }
 
 // Display startup information
 var baseUrl = EnvironmentHelper.GetBaseUrl(builder.Configuration);
-Console.WriteLine($"🚀 AI Agent Backend starting...");
-Console.WriteLine($"🌐 Environment: {app.Environment.EnvironmentName}");
-Console.WriteLine($"🌐 Server URL: {baseUrl}");
-Console.WriteLine($"📚 Swagger UI: {baseUrl}/swagger");
-Console.WriteLine($"📊 Hangfire Dashboard: {baseUrl}/hangfire");
-Console.WriteLine($"🤖 Telegram Webhook: {baseUrl}/api/telegram/webhook");
-Console.WriteLine($"💬 WhatsApp Webhook: {baseUrl}/api/whatsapp/webhook");
-Console.WriteLine($"❤️ Health Check: {baseUrl}/health");
+Log.Information("AI Agent Backend starting...");
+Log.Information("Environment: {Environment}", app.Environment.EnvironmentName);
+Log.Information("Server URL: {BaseUrl}", baseUrl);
+Log.Information("Swagger UI: {BaseUrl}/swagger", baseUrl);
+Log.Information("Hangfire Dashboard: {BaseUrl}/hangfire", baseUrl);
+Log.Information("Telegram Webhook: {BaseUrl}/api/telegram/webhook", baseUrl);
+Log.Information("WhatsApp Webhook: {BaseUrl}/api/whatsapp/webhook", baseUrl);
+Log.Information("Health Check: {BaseUrl}/health", baseUrl);
 
 app.Run();
 
@@ -862,17 +881,6 @@ app.Run();
 // Ensures all tables from the current DbContext model exist in MySQL
 static async Task EnsureAllTablesExistAsync(ApplicationDbContext db)
 {
-    var dropStatements = new[]
-    {
-        "DROP TABLE IF EXISTS `TeamMembers`",
-        "DROP TABLE IF EXISTS `AuditEntries`",
-        "DROP TABLE IF EXISTS `Teams`",
-        "DROP TABLE IF EXISTS `ConversationHistory`",
-        "DROP TABLE IF EXISTS `DocumentChunks`",
-        "DROP TABLE IF EXISTS `Documents`",
-        "DROP TABLE IF EXISTS `AutomationRules`",
-        "DROP TABLE IF EXISTS `DeviceTokens`"
-    };
     var createStatements = new[]
     {
         @"CREATE TABLE IF NOT EXISTS `Teams` (`Id` INT NOT NULL AUTO_INCREMENT, `OwnerId` INT NOT NULL, `Name` VARCHAR(100) NOT NULL, `Description` VARCHAR(500) NULL, `CreatedAt` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`Id`), INDEX `IX_Teams_OwnerId` (`OwnerId`), CONSTRAINT `FK_Teams_Users_OwnerId` FOREIGN KEY (`OwnerId`) REFERENCES `Users`(`Id`) ON DELETE RESTRICT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
@@ -885,15 +893,11 @@ static async Task EnsureAllTablesExistAsync(ApplicationDbContext db)
         @"CREATE TABLE IF NOT EXISTS `DeviceTokens` (`Id` INT NOT NULL AUTO_INCREMENT, `UserId` VARCHAR(255) NOT NULL, `Token` LONGTEXT NOT NULL, `Platform` VARCHAR(20) NOT NULL DEFAULT 'web', `CreatedAt` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), `LastUsedAt` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), `IsActive` TINYINT(1) NOT NULL DEFAULT 1, PRIMARY KEY (`Id`), INDEX `IX_DeviceTokens_UserId` (`UserId`), INDEX `IX_DeviceTokens_IsActive` (`IsActive`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     };
     var count = 0;
-    foreach (var sql in dropStatements)
-    {
-        try { await db.Database.ExecuteSqlRawAsync(sql); } catch { }
-    }
     foreach (var sql in createStatements)
     {
         try { await db.Database.ExecuteSqlRawAsync(sql); count++; } catch { }
     }
-    if (count > 0) Console.WriteLine($"✅ Ensured {count} table(s) exist");
+    if (count > 0) Log.Information("Ensured {Count} table(s) exist", count);
 }
 
 // Environment Helper Class (FIXED NULL REFERENCE ISSUES)
@@ -980,7 +984,8 @@ public class HangfireAuthorizationFilter : IDashboardAuthorizationFilter
     public bool Authorize(DashboardContext context)
     {
         var httpContext = context.GetHttpContext();
-        return httpContext.User.Identity?.IsAuthenticated == true;
+        return httpContext.User.Identity?.IsAuthenticated == true
+            && httpContext.User.IsInRole("Admin");
     }
 }
 

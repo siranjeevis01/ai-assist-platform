@@ -8,6 +8,7 @@ using AiAgentBackend.Services.Integrations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.Security.Cryptography;
 
 namespace AiAgentBackend.Controllers
 {
@@ -220,7 +221,7 @@ namespace AiAgentBackend.Controllers
                     return Ok(new { message = "If the email exists, a reset link has been sent" });
                 }
 
-                var otp = new Random().Next(100000, 999999).ToString();
+                var otp = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
                 user.PasswordResetToken = otp;
                 user.PasswordResetExpiry = DateTime.UtcNow.AddHours(1);
                 

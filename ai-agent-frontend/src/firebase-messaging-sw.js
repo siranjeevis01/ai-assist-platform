@@ -16,7 +16,7 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTitle = payload.notification?.title || 'AI Agent';
   const notificationOptions = {
     body: payload.notification?.body || '',
-    icon: '/assets/icons/icon-192x192.png',
+    icon: '/assets/icons/icon-192.png',
     data: payload.data,
   };
   self.registration.showNotification(notificationTitle, notificationOptions);

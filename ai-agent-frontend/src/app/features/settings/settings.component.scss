@@ -1,25 +1,25 @@
 .settings-page { max-width: 700px; margin: 0 auto; }
 
 .page-header { margin-bottom: 24px;
-  h1 { margin: 0 0 8px; font-size: 28px; color: #333; } p { margin: 0; color: #888; }
+  h1 { margin: 0 0 8px; font-size: 28px; color: var(--text-primary); } p { margin: 0; color: var(--text-secondary); }
 }
 
-.settings-card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 20px;
-  h2 { margin: 0 0 20px; font-size: 18px; color: #444; }
+.settings-card { background: var(--bg-card); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 20px;
+  h2 { margin: 0 0 20px; font-size: 18px; color: var(--text-primary); }
 }
 
 .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px;
-  label { font-weight: 500; color: #444; font-size: 14px; }
-  input, select { padding: 12px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.2s;
-    &:focus { border-color: #667eea; }
-    &:disabled { background: #f5f5f5; color: #888; }
+  label { font-weight: 500; color: var(--text-primary); font-size: 14px; }
+  input, select { padding: 12px 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.2s; background: var(--bg-input); color: var(--text-primary);
+    &:focus { border-color: var(--primary-color); }
+    &:disabled { background: var(--border-color); color: var(--text-secondary); }
   }
-  select { background: white; cursor: pointer; }
+  select { background: var(--bg-input); cursor: pointer; }
 }
 
 .form-actions { display: flex; gap: 12px; margin-top: 16px; }
 
 .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-.btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(102,126,234,0.3); } &:disabled { opacity: 0.6; cursor: not-allowed; } }
+.btn-primary { background: var(--primary-gradient); color: white; &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(102,126,234,0.3); } &:disabled { opacity: 0.6; cursor: not-allowed; } }
 
-.success-message { margin-top: 16px; padding: 12px; background: #e8f5e9; color: #43e97b; border-radius: 8px; text-align: center; font-weight: 500; }
+.success-message { margin-top: 16px; padding: 12px; background: #e8f5e9; color: var(--success-color); border-radius: 8px; text-align: center; font-weight: 500; }

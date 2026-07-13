@@ -5,7 +5,7 @@
   justify-content: center;
   min-height: 100vh;
   padding: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--primary-gradient);
 }
 
 .back-home {
@@ -27,7 +27,7 @@
 }
 
 .auth-card {
-  background: white;
+  background: var(--bg-card);
   border-radius: 16px;
   padding: 40px;
   width: 100%;
@@ -43,13 +43,13 @@
     margin: 0 0 8px;
     font-size: 2rem;
     font-weight: 700;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--primary-gradient);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  p { color: #666; margin: 0; font-size: 1rem; }
+  p { color: var(--text-secondary); margin: 0; font-size: 1rem; }
 }
 
 .auth-form {
@@ -59,15 +59,15 @@
 
   .error-message {
     padding: 12px;
-    background: #fff5f5;
-    color: #e74c3c;
+    background: var(--bg-danger-hover);
+    color: var(--danger-color);
     border-radius: 8px;
     font-size: 14px;
     text-align: center;
   }
 
   .error-text {
-    color: #e74c3c;
+    color: var(--danger-color);
     font-size: 13px;
     margin-top: 4px;
   }
@@ -79,31 +79,33 @@
 
     label {
       font-weight: 500;
-      color: #444;
+      color: var(--text-primary);
       font-size: 14px;
     }
 
     input, select, textarea {
       padding: 12px 16px;
-      border: 1px solid #ddd;
+      border: 1px solid var(--border-color);
       border-radius: 8px;
       font-size: 14px;
       transition: border-color 0.2s;
       outline: none;
+      background: var(--bg-input);
+      color: var(--text-primary);
 
       &:focus {
-        border-color: #667eea;
+        border-color: var(--primary-color);
         box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
       }
     }
 
     textarea { resize: vertical; min-height: 80px; }
-    select { cursor: pointer; background: white; }
+    select { cursor: pointer; background: var(--bg-input); }
   }
 
   .forgot-link {
     align-items: flex-end;
-    a { color: #667eea; text-decoration: none; font-size: 14px; font-weight: 500;
+    a { color: var(--primary-color); text-decoration: none; font-size: 14px; font-weight: 500;
       &:hover { text-decoration: underline; }
     }
   }
@@ -120,7 +122,7 @@
   .auth-links {
     text-align: center;
     margin-top: 8px;
-    a { color: #667eea; text-decoration: none; font-size: 14px; font-weight: 500;
+    a { color: var(--primary-color); text-decoration: none; font-size: 14px; font-weight: 500;
       &:hover { text-decoration: underline; }
     }
   }
@@ -137,7 +139,7 @@
 
     .strength-bar {
       height: 4px;
-      background: #eee;
+      background: var(--border-color);
       border-radius: 2px;
       overflow: hidden;
       margin-bottom: 6px;
@@ -149,16 +151,16 @@
       }
     }
 
-    .strength-text { font-size: 13px; color: #666; }
+    .strength-text { font-size: 13px; color: var(--text-secondary); }
     .password-feedback { margin-top: 6px; }
-    .feedback-item { font-size: 12px; color: #888; }
+    .feedback-item { font-size: 12px; color: var(--text-secondary); }
   }
 
   .auth-btn {
     padding: 14px;
     border: none;
     border-radius: 10px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--primary-gradient);
     color: white;
     font-size: 16px;
     font-weight: 600;
@@ -171,17 +173,17 @@
 }
 
 .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-.btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(102,126,234,0.3); } &:disabled { opacity: 0.6; cursor: not-allowed; } }
+.btn-primary { background: var(--primary-gradient); color: white; &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(102,126,234,0.3); } &:disabled { opacity: 0.6; cursor: not-allowed; } }
 .btn-block { width: 100%; justify-content: center; padding: 14px; font-size: 16px; }
 
 .auth-footer {
   text-align: center;
   margin-top: 24px;
   padding-top: 20px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--border-color);
 
-  p { color: #666; font-size: 14px; margin: 0; }
-  a { color: #667eea; text-decoration: none; font-weight: 500; cursor: pointer;
+  p { color: var(--text-secondary); font-size: 14px; margin: 0; }
+  a { color: var(--primary-color); text-decoration: none; font-weight: 500; cursor: pointer;
     &:hover { text-decoration: underline; }
   }
 }

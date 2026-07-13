@@ -23,7 +23,10 @@ interface NavItem {
 
       <div class="sidebar" [ngClass]="{'open': sidebarOpen()}">
         <div class="sidebar-header">
-          <h2>AI Agent</h2>
+          <a routerLink="/dashboard" class="home-link" (click)="sidebarOpen.set(false)">
+            <span class="material-icons home-icon">smart_toy</span>
+            <h2>AI Agent</h2>
+          </a>
         </div>
 
         <nav class="sidebar-nav">

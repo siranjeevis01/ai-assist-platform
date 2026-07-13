@@ -149,31 +149,31 @@ import { ToastService } from '../../shared/toast/toast.service';
   styles: [`
     .integrations-page { padding: 2rem; }
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-    .header-content h1 { margin: 0; color: #e0e0e0; font-size: 1.8rem; }
-    .header-content p { margin: 0.3rem 0 0; color: #888; }
+    .header-content h1 { margin: 0; color: var(--text-primary); font-size: 1.8rem; }
+    .header-content p { margin: 0.3rem 0 0; color: var(--text-secondary); }
     .integrations-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 1.5rem; }
-    .integration-card { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 16px; padding: 1.5rem; transition: all 0.3s; }
-    .integration-card:hover { border-color: #667eea; transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+    .integration-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 1.5rem; transition: all 0.3s; }
+    .integration-card:hover { border-color: var(--primary-color); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
     .integration-card.full-width { grid-column: 1 / -1; }
     .integration-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; }
     .integration-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .integration-icon .material-icons { font-size: 24px; color: #fff; }
+    .integration-icon .material-icons { font-size: 24px; color: white; }
     .integration-info { flex: 1; }
-    .integration-info h3 { margin: 0; color: #e0e0e0; font-size: 1.1rem; }
-    .integration-info p { margin: 0.2rem 0 0; color: #888; font-size: 0.85rem; }
+    .integration-info h3 { margin: 0; color: var(--text-primary); font-size: 1.1rem; }
+    .integration-info p { margin: 0.2rem 0 0; color: var(--text-secondary); font-size: 0.85rem; }
     .status { display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
     .status.connected { background: rgba(67, 233, 123, 0.1); color: #43e97b; }
     .status.disconnected { background: rgba(245, 87, 108, 0.1); color: #f5576c; }
     .status .material-icons { font-size: 16px; }
     .integration-actions { display: flex; gap: 0.8rem; flex-wrap: wrap; }
     .preference-select { display: flex; gap: 0.8rem; align-items: center; width: 100%; }
-    .responsive-select { flex: 1; max-width: 300px; padding: 0.6rem 1rem; background: #2a2a3e; border: 1px solid #444; border-radius: 8px; color: #e0e0e0; font-size: 0.95rem; cursor: pointer; }
-    .responsive-select:focus { border-color: #667eea; outline: none; }
+    .responsive-select { flex: 1; max-width: 300px; padding: 0.6rem 1rem; background: var(--bg-hover); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 0.95rem; cursor: pointer; }
+    .responsive-select:focus { border-color: var(--primary-color); outline: none; }
     .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1.2rem; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
     .btn .material-icons { font-size: 18px; }
-    .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+    .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
     .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(102,126,234,0.4); }
-    .btn-secondary { background: #2a2a3e; color: #e0e0e0; border: 1px solid #444; }
+    .btn-secondary { background: var(--bg-hover); color: var(--text-primary); border: 1px solid var(--border-color); }
     .btn-danger { background: rgba(245, 87, 108, 0.15); color: #f5576c; border: 1px solid rgba(245, 87, 108, 0.3); }
     .btn-danger:hover { background: rgba(245, 87, 108, 0.25); }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
