@@ -127,7 +127,7 @@ namespace AiAgentBackend.Controllers
                     .Include(u => u.Preference)
                     .FirstOrDefaultAsync(u => u.Email == req.Email);
                     
-                if (user == null || !_passwordService.VerifyPassword(req.Password, user.PasswordHash))
+                if (user == null || user.ExternalAuthOnly || !_passwordService.VerifyPassword(req.Password, user.PasswordHash))
                 {
                     _logger.LogWarning("Failed login attempt for email: {Email}", req.Email);
                     return Unauthorized(new { error = "Invalid credentials" });
@@ -188,8 +188,19 @@ namespace AiAgentBackend.Controllers
                     return Unauthorized(new { error = "Invalid or expired refresh token" });
 
                 var newJwt = _jwt.CreateToken(tokenEntry.User!);
+
+                // Revoke old refresh token
+                tokenEntry.IsRevoked = true;
+
+                // Create new refresh token
+                var newRefreshToken = Guid.NewGuid().ToString();
+                _db.RefreshTokens.Add(new RefreshToken
+                {
+                    UserId = tokenEntry.UserId,
+                    Token = newRefreshToken,
+                    ExpiresAt = DateTime.UtcNow.AddDays(7)
+                });
                 
-                // Log the token refresh
                 _db.AuditLogs.Add(new AuditLog
                 {
                     UserId = tokenEntry.UserId,
@@ -200,7 +211,7 @@ namespace AiAgentBackend.Controllers
 
                 await _db.SaveChangesAsync();
 
-                return Ok(new { Token = newJwt });
+                return Ok(new { Token = newJwt, RefreshToken = newRefreshToken });
             }
             catch (Exception ex)
             {

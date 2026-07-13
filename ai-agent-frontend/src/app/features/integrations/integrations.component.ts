@@ -111,12 +111,16 @@ import { ToastService } from '../../shared/toast/toast.service';
             </div>
           </div>
           <div class="integration-actions">
-            <button *ngIf="!trelloConnected()" class="btn btn-secondary" disabled>
-              <span class="material-icons">info</span> Configure via Environment
+            <button *ngIf="!trelloConnected()" class="btn btn-primary" (click)="connectTrello()" [disabled]="trelloLoading()">
+              <span class="material-icons">{{ trelloLoading() ? 'hourglass_empty' : 'link' }}</span>
+              {{ trelloLoading() ? 'Connecting...' : 'Connect Trello' }}
             </button>
             <button *ngIf="trelloConnected()" class="btn btn-primary" (click)="syncTrello()" [disabled]="trelloLoading()">
               <span class="material-icons">{{ trelloLoading() ? 'hourglass_empty' : 'sync' }}</span>
               {{ trelloLoading() ? 'Syncing...' : 'Sync Tasks' }}
+            </button>
+            <button *ngIf="trelloConnected()" class="btn btn-danger" (click)="disconnectTrello()" [disabled]="trelloLoading()">
+              <span class="material-icons">link_off</span> Disconnect
             </button>
           </div>
         </div>
@@ -204,6 +208,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadStatus();
     this.handleOAuthCallback();
+    this.handleTrelloCallback();
   }
 
   ngOnDestroy(): void { this.subs.forEach(s => s.unsubscribe()); }
@@ -230,7 +235,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     this.subs.push(this.api.getMessagingPreference().subscribe(p => {
       if (p.platform) this.selectedPlatform = p.platform;
     }));
-    this.subs.push(this.api.getTrelloStatus().subscribe(s => this.trelloConnected.set(s.configured)));
+    this.subs.push(this.api.getTrelloStatus().subscribe(s => this.trelloConnected.set(s.connected)));
   }
 
   connectGoogle(): void {
@@ -284,6 +289,32 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       next: () => { this.trelloLoading.set(false); this.toast.success('Tasks synced with Trello'); },
       error: () => { this.trelloLoading.set(false); this.toast.error('Failed to sync with Trello'); }
     }));
+  }
+
+  connectTrello(): void {
+    this.trelloLoading.set(true);
+    this.subs.push(this.api.getTrelloConnectUrl().subscribe({
+      next: (res) => { window.location.href = res.url; },
+      error: () => { this.trelloLoading.set(false); this.toast.error('Failed to get Trello connect URL'); }
+    }));
+  }
+
+  disconnectTrello(): void {
+    this.trelloLoading.set(true);
+    this.subs.push(this.api.disconnectTrello().subscribe({
+      next: () => { this.trelloConnected.set(false); this.trelloLoading.set(false); this.toast.success('Trello disconnected'); },
+      error: () => { this.trelloLoading.set(false); this.toast.error('Failed to disconnect Trello'); }
+    }));
+  }
+
+  private handleTrelloCallback(): void {
+    const params = new URLSearchParams(window.location.search);
+    const trelloConnected = params.get('trelloConnected');
+    if (trelloConnected === 'true') {
+      window.history.replaceState({}, '', window.location.pathname);
+      this.loadStatus();
+      this.toast.success('Trello connected successfully');
+    }
   }
 
   setPreference(): void {

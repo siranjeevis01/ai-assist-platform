@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using AiAgentBackend.Data;
@@ -353,14 +354,16 @@ public async Task<MessagingPlatformStatus> GetStatusAsync()
             }
 
             // Create new user
+            var randomPassword = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
             var user = new User
             {
                 Email = $"{from.Id}@telegram.aiagent",
                 Name = $"{from.FirstName} {from.Username ?? ""}".Trim(),
-                PasswordHash = "telegram-auth", // Special password for Telegram users
+                PasswordHash = $"telegram-nopw:{Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(randomPassword)))}",
                 Role = "User",
                 Timezone = "UTC",
                 PhoneNumber = null,
+                ExternalAuthOnly = true,
                 CreatedAt = DateTime.UtcNow
             };
 

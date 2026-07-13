@@ -35,9 +35,26 @@ namespace AiAgentBackend.Services.Integrations
             _logger = logger;
         }
 
-        private string ApiToken => _options.AccessToken;
-        private string ApiKey => _options.ApiKey;
         private string BoardId => _options.DefaultBoardId;
+
+        private async Task<(string apiKey, string apiToken)> GetUserCredentialsAsync(int userId)
+        {
+            var token = await _db.ProviderTokens
+                .FirstOrDefaultAsync(t => t.UserId == userId && t.Provider == "Trello");
+
+            if (token != null)
+                return (GetConsumerKey(), token.EncryptedAccessToken);
+
+            var sharedKey = !string.IsNullOrEmpty(_options.ConsumerKey) ? _options.ConsumerKey : _options.ApiKey;
+            var sharedToken = _options.AccessToken;
+            if (!string.IsNullOrEmpty(sharedKey) && !string.IsNullOrEmpty(sharedToken))
+                return (sharedKey, sharedToken);
+
+            return (string.Empty, string.Empty);
+        }
+
+        private string GetConsumerKey() =>
+            !string.IsNullOrEmpty(_options.ConsumerKey) ? _options.ConsumerKey : _options.ApiKey;
 
         private string GetListIdForStatus(string status) => status switch
         {
@@ -51,6 +68,13 @@ namespace AiAgentBackend.Services.Integrations
         {
             try
             {
+                var (apiKey, apiToken) = await GetUserCredentialsAsync(userId);
+                if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(apiToken))
+                {
+                    _logger.LogWarning("No Trello credentials for user {UserId}", userId);
+                    return task;
+                }
+
                 var listId = GetListIdForStatus(task.Status);
                 if (string.IsNullOrEmpty(listId))
                 {
@@ -61,20 +85,18 @@ namespace AiAgentBackend.Services.Integrations
                 var dueDate = task.DueUtc?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
                 var description = !string.IsNullOrEmpty(task.Description) ? task.Description : "";
                 
-                var url = $"cards?key={ApiKey}&token={ApiToken}&idList={listId}&name={Uri.EscapeDataString(task.Title)}&desc={Uri.EscapeDataString(description)}";
+                var url = $"cards?key={apiKey}&token={apiToken}&idList={listId}&name={Uri.EscapeDataString(task.Title)}&desc={Uri.EscapeDataString(description)}";
                 
                 if (!string.IsNullOrEmpty(dueDate))
                 {
                     url += $"&due={dueDate}";
                 }
 
-                // Add labels if any
                 if (!string.IsNullOrEmpty(task.LabelsJson))
                 {
                     var labels = JsonSerializer.Deserialize<List<string>>(task.LabelsJson) ?? new List<string>();
                     if (labels != null && labels.Any())
                     {
-                        // First, get or create labels
                         var labelIds = new List<string>();
                         foreach (var labelName in labels)
                         {
@@ -126,16 +148,21 @@ namespace AiAgentBackend.Services.Integrations
 
             try
             {
+                var (apiKey, apiToken) = await GetUserCredentialsAsync(userId);
+                if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(apiToken))
+                {
+                    _logger.LogWarning("No Trello credentials for user {UserId}", userId);
+                    return task;
+                }
+
                 var updates = new List<string>();
                 
-                // Update list if status changed
                 var listId = GetListIdForStatus(task.Status);
                 if (!string.IsNullOrEmpty(listId))
                 {
                     updates.Add($"idList={listId}");
                 }
 
-                // Update due date if changed
                 if (task.DueUtc.HasValue)
                 {
                     updates.Add($"due={task.DueUtc.Value.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")}");
@@ -145,17 +172,15 @@ namespace AiAgentBackend.Services.Integrations
                     updates.Add("due=null");
                 }
 
-                // Update name/description if changed
                 updates.Add($"name={Uri.EscapeDataString(task.Title)}");
                 updates.Add($"desc={Uri.EscapeDataString(task.Description ?? "")}");
 
                 if (updates.Any())
                 {
-                    var url = $"cards/{task.ExternalId}?key={ApiKey}&token={ApiToken}&{string.Join("&", updates)}";
+                    var url = $"cards/{task.ExternalId}?key={apiKey}&token={apiToken}&{string.Join("&", updates)}";
                     await _http.PutAsync(url, null);
                 }
 
-                // Update labels if changed
                 if (!string.IsNullOrEmpty(task.LabelsJson))
                 {
                     var labels = JsonSerializer.Deserialize<List<string>>(task.LabelsJson) ?? new List<string>();
@@ -179,6 +204,10 @@ namespace AiAgentBackend.Services.Integrations
         {
             try
             {
+                var (apiKey, apiToken) = await GetUserCredentialsAsync(userId);
+                if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(apiToken))
+                    return false;
+
                 var cardId = await GetExternalIdFromTaskId(taskId);
                 var listId = GetListIdForStatus(status);
                 
@@ -188,7 +217,7 @@ namespace AiAgentBackend.Services.Integrations
                     return false;
                 }
 
-                var url = $"cards/{cardId}?key={ApiKey}&token={ApiToken}&idList={listId}";
+                var url = $"cards/{cardId}?key={apiKey}&token={apiToken}&idList={listId}";
                 var response = await _http.PutAsync(url, null);
                 
                 return response.IsSuccessStatusCode;
@@ -204,17 +233,14 @@ namespace AiAgentBackend.Services.Integrations
         {
             try
             {
-                var trelloToken = await _db.ProviderTokens
-                    .FirstOrDefaultAsync(t => t.UserId == userId && t.Provider == "Trello");
-                    
-                if (trelloToken == null) 
+                var (apiKey, apiToken) = await GetUserCredentialsAsync(userId);
+                if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(apiToken))
                 {
-                    _logger.LogWarning("No Trello token found for user {UserId}", userId);
+                    _logger.LogWarning("No Trello credentials for user {UserId}", userId);
                     return;
                 }
 
-                // Get all cards from the board
-                var url = $"boards/{BoardId}/cards?key={ApiKey}&token={ApiToken}";
+                var url = $"boards/{BoardId}/cards?key={apiKey}&token={apiToken}";
                 var response = await _http.GetAsync(url);
                 
                 if (!response.IsSuccessStatusCode) 
@@ -321,8 +347,11 @@ foreach (var card in cardList)
         {
             try
             {
-                // First, try to find existing label
-                var url = $"boards/{BoardId}/labels?key={ApiKey}&token={ApiToken}";
+                var (apiKey, apiToken) = await GetUserCredentialsAsync(userId);
+                if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(apiToken))
+                    return "";
+
+                var url = $"boards/{BoardId}/labels?key={apiKey}&token={apiToken}";
                 var response = await _http.GetAsync(url);
                 
                 if (response.IsSuccessStatusCode)
@@ -338,8 +367,7 @@ foreach (var card in cardList)
                     }
                 }
 
-                // Create new label if not found
-                var createUrl = $"labels?key={ApiKey}&token={ApiToken}&name={Uri.EscapeDataString(labelName)}&idBoard={BoardId}&color=blue";
+                var createUrl = $"labels?key={apiKey}&token={apiToken}&name={Uri.EscapeDataString(labelName)}&idBoard={BoardId}&color=blue";
                 var createResponse = await _http.PostAsync(createUrl, null);
                 
                 if (createResponse.IsSuccessStatusCode)
@@ -360,15 +388,17 @@ foreach (var card in cardList)
         {
             try
             {
-                // First, get current labels
-                var url = $"cards/{cardId}/labels?key={ApiKey}&token={ApiToken}";
+                var (apiKey, apiToken) = await GetUserCredentialsAsync(0);
+                if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(apiToken))
+                    return;
+
+                var url = $"cards/{cardId}/labels?key={apiKey}&token={apiToken}";
                 var response = await _http.GetAsync(url);
                 
                 if (response.IsSuccessStatusCode)
                 {
                     var currentLabels = await response.Content.ReadFromJsonAsync<JsonElement>();
                     
-                    // Remove labels not in the new list
                     foreach (var label in currentLabels.EnumerateArray())
                     {
                         var labelId = label.GetProperty("id").GetString();
@@ -376,18 +406,17 @@ foreach (var card in cardList)
                         
                         if (!labels.Contains(labelName, StringComparer.OrdinalIgnoreCase))
                         {
-                            await _http.DeleteAsync($"cards/{cardId}/idLabels/{labelId}?key={ApiKey}&token={ApiToken}");
+                            await _http.DeleteAsync($"cards/{cardId}/idLabels/{labelId}?key={apiKey}&token={apiToken}");
                         }
                     }
                 }
 
-                // Add new labels
                 foreach (var labelName in labels)
                 {
-                    var labelId = await GetOrCreateLabelId(0, labelName); // userId not needed for this operation
+                    var labelId = await GetOrCreateLabelId(0, labelName);
                     if (!string.IsNullOrEmpty(labelId))
                     {
-                        await _http.PostAsync($"cards/{cardId}/idLabels?key={ApiKey}&token={ApiToken}&value={labelId}", null);
+                        await _http.PostAsync($"cards/{cardId}/idLabels?key={apiKey}&token={apiToken}&value={labelId}", null);
                     }
                 }
             }

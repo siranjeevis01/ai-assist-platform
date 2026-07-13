@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using AiAgentBackend.Data;
@@ -330,14 +331,16 @@ namespace AiAgentBackend.Services.Messaging
             }
 
             // Create new user
+            var randomPassword = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
             user = new User
             {
                 Email = $"{phoneNumber}@whatsapp.aiagent",
                 Name = $"WhatsApp User {phoneNumber}",
-                PasswordHash = "whatsapp-auth", // Special password for WhatsApp users
+                PasswordHash = $"whatsapp-nopw:{Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(randomPassword)))}",
                 Role = "User",
                 Timezone = "UTC",
                 PhoneNumber = phoneNumber,
+                ExternalAuthOnly = true,
                 CreatedAt = DateTime.UtcNow
             };
 

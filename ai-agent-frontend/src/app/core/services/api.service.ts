@@ -223,8 +223,14 @@ export class ApiService {
   }
 
   // Trello
-  getTrelloStatus(): Observable<{ connected: boolean; configured: boolean; boardId?: string }> {
-    return this.http.get<{ connected: boolean; configured: boolean; boardId?: string }>(`${this.api}/api/Trello/status`);
+  getTrelloStatus(): Observable<TrelloStatus> {
+    return this.http.get<TrelloStatus>(`${this.api}/api/Trello/status`);
+  }
+  getTrelloConnectUrl(): Observable<{ url: string }> {
+    return this.http.get<{ url: string }>(`${this.api}/api/Trello/connect-url`);
+  }
+  disconnectTrello(): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.api}/api/Trello/disconnect`);
   }
   syncTrelloTasks(): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.api}/api/Trello/sync`, {});

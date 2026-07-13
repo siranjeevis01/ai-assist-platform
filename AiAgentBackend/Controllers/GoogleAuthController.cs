@@ -48,12 +48,15 @@ namespace AiAgentBackend.Controllers
                 "https://www.googleapis.com/auth/gmail.compose"
             };
 
-            // Use the configured redirect URI
             var redirectUri = _options.RedirectUri;
             if (string.IsNullOrEmpty(redirectUri))
             {
                 redirectUri = _configuration["Google:RedirectUri"] ?? "http://localhost:5000/api/google/callback";
             }
+
+            var nonce = Guid.NewGuid().ToString("N");
+            var state = $"{userId}:{nonce}";
+            _cache.Set($"google_oauth:{nonce}", userId, TimeSpan.FromMinutes(10));
 
             var url = $"https://accounts.google.com/o/oauth2/v2/auth" +
                       $"?client_id={Uri.EscapeDataString(_options.ClientId)}" +
@@ -62,7 +65,7 @@ namespace AiAgentBackend.Controllers
                       $"&scope={Uri.EscapeDataString(string.Join(" ", scopes))}" +
                       $"&access_type=offline" +
                       $"&prompt=consent" +
-                      $"&state={userId}";
+                      $"&state={Uri.EscapeDataString(state)}";
 
             return url;
         }
@@ -122,8 +125,17 @@ namespace AiAgentBackend.Controllers
                     return BadRequest(new { error = "Missing authorization code" });
                 if (string.IsNullOrEmpty(state)) 
                     return BadRequest(new { error = "Missing state parameter" });
-                if (!int.TryParse(state, out int userId)) 
+
+                var decodedState = Uri.UnescapeDataString(state);
+                var stateParts = decodedState.Split(':');
+                if (stateParts.Length != 2 || !int.TryParse(stateParts[0], out int userId))
                     return BadRequest(new { error = "Invalid state parameter" });
+
+                var nonce = stateParts[1];
+                var cacheKey = $"google_oauth:{nonce}";
+                if (!_cache.TryGetValue(cacheKey, out int cachedUserId) || cachedUserId != userId)
+                    return BadRequest(new { error = "Invalid or expired OAuth state" });
+                _cache.Remove(cacheKey);
 
                 var redirectUri = _options.RedirectUri;
                 if (string.IsNullOrEmpty(redirectUri))

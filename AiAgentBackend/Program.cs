@@ -159,6 +159,9 @@ builder.Services.PostConfigure<GoogleOptions>(options =>
 
 builder.Services.PostConfigure<TrelloOptions>(options =>
 {
+    options.ConsumerKey = EnvironmentHelper.ResolveEnvPlaceholder(options.ConsumerKey);
+    options.ConsumerSecret = EnvironmentHelper.ResolveEnvPlaceholder(options.ConsumerSecret);
+    options.RedirectUri = EnvironmentHelper.ResolveEnvPlaceholder(options.RedirectUri);
     options.ApiKey = EnvironmentHelper.ResolveEnvPlaceholder(options.ApiKey);
     options.AccessToken = EnvironmentHelper.ResolveEnvPlaceholder(options.AccessToken);
     options.DefaultBoardId = EnvironmentHelper.ResolveEnvPlaceholder(options.DefaultBoardId);

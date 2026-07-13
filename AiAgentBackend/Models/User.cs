@@ -32,6 +32,8 @@ namespace AiAgentBackend.Models
         
         public DateTime? PasswordResetExpiry { get; set; }
 
+        public bool ExternalAuthOnly { get; set; } = false;
+
         // Navigation properties
         public virtual ICollection<TaskItem> Tasks { get; set; } = new List<TaskItem>();
         public virtual ICollection<Event> Events { get; set; } = new List<Event>();
