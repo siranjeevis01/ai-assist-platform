@@ -905,11 +905,33 @@ static async Task EnsureAllTablesExistAsync(ApplicationDbContext db)
 
     var alterStatements = new[]
     {
+        // Users table — add missing columns
+        @"ALTER TABLE `Users` ADD COLUMN `PhoneNumber` VARCHAR(100) NULL",
+        @"ALTER TABLE `Users` ADD COLUMN `PasswordResetToken` VARCHAR(128) NULL",
+        @"ALTER TABLE `Users` ADD COLUMN `PasswordResetExpiry` DATETIME(6) NULL",
+        @"ALTER TABLE `Users` ADD COLUMN `ExternalAuthOnly` TINYINT(1) NOT NULL DEFAULT 0",
+        // Tasks table
         @"ALTER TABLE `Tasks` ADD COLUMN `RecurrenceRule` VARCHAR(50) NULL",
-        @"ALTER TABLE `Tasks` ADD COLUMN `RecurrenceNextUtc` DATETIME(6) NULL"
+        @"ALTER TABLE `Tasks` ADD COLUMN `RecurrenceNextUtc` DATETIME(6) NULL",
+        @"ALTER TABLE `Tasks` ADD COLUMN `CompletedAt` DATETIME(6) NULL",
+        @"ALTER TABLE `Tasks` ADD COLUMN `Description` VARCHAR(1000) NULL",
+        @"ALTER TABLE `Tasks` ADD COLUMN `LastReminderSentAt` DATETIME(6) NULL"
+    };
+    var createCoreTables = new[]
+    {
+        @"CREATE TABLE IF NOT EXISTS `RefreshTokens` (`Id` INT NOT NULL AUTO_INCREMENT, `UserId` INT NOT NULL, `Token` VARCHAR(100) NOT NULL, `ExpiresAt` DATETIME(6) NOT NULL, `IsRevoked` TINYINT(1) NOT NULL DEFAULT 0, PRIMARY KEY (`Id`), INDEX `IX_RefreshTokens_UserId` (`UserId`), INDEX `IX_RefreshTokens_Token` (`Token`), CONSTRAINT `FK_RefreshTokens_Users_UserId` FOREIGN KEY (`UserId`) REFERENCES `Users`(`Id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        @"CREATE TABLE IF NOT EXISTS `AuditLogs` (`Id` INT NOT NULL AUTO_INCREMENT, `UserId` INT NOT NULL, `Entity` VARCHAR(50) NOT NULL, `Action` VARCHAR(50) NOT NULL, `Timestamp` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`Id`), INDEX `IX_AuditLogs_UserId` (`UserId`), CONSTRAINT `FK_AuditLogs_Users_UserId` FOREIGN KEY (`UserId`) REFERENCES `Users`(`Id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        @"CREATE TABLE IF NOT EXISTS `ProviderTokens` (`Id` INT NOT NULL AUTO_INCREMENT, `UserId` INT NOT NULL, `Provider` VARCHAR(50) NOT NULL, `EncryptedAccessToken` LONGTEXT NOT NULL, `RefreshToken` VARCHAR(500) NULL, `Scope` VARCHAR(500) NOT NULL, `ExpiresAt` DATETIME(6) NULL, `CreatedAt` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`Id`), INDEX `IX_ProviderTokens_UserId` (`UserId`), CONSTRAINT `FK_ProviderTokens_Users_UserId` FOREIGN KEY (`UserId`) REFERENCES `Users`(`Id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        @"CREATE TABLE IF NOT EXISTS `Events` (`Id` INT NOT NULL AUTO_INCREMENT, `UserId` INT NOT NULL, `Title` VARCHAR(200) NOT NULL, `Description` VARCHAR(1000) NULL, `StartUtc` DATETIME(6) NOT NULL, `EndUtc` DATETIME(6) NOT NULL, `Status` VARCHAR(50) NOT NULL DEFAULT 'Scheduled', `ExternalId` VARCHAR(100) NULL, `AttendeesJson` LONGTEXT NULL, `Location` VARCHAR(200) NULL, `Source` VARCHAR(50) NULL, PRIMARY KEY (`Id`), INDEX `IX_Events_UserId` (`UserId`), CONSTRAINT `FK_Events_Users_UserId` FOREIGN KEY (`UserId`) REFERENCES `Users`(`Id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        @"CREATE TABLE IF NOT EXISTS `Messages` (`Id` INT NOT NULL AUTO_INCREMENT, `UserId` INT NOT NULL, `Channel` VARCHAR(50) NOT NULL, `Direction` VARCHAR(20) NOT NULL, `Body` LONGTEXT NOT NULL, `Intent` VARCHAR(50) NULL, `EntitiesJson` LONGTEXT NULL, `CorrelationId` VARCHAR(100) NULL, `MessageType` LONGTEXT NULL, `CreatedAt` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`Id`), INDEX `IX_Messages_UserId` (`UserId`), CONSTRAINT `FK_Messages_Users_UserId` FOREIGN KEY (`UserId`) REFERENCES `Users`(`Id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        @"CREATE TABLE IF NOT EXISTS `ChatMessages` (`Id` INT NOT NULL AUTO_INCREMENT, `UserId` INT NOT NULL, `Role` VARCHAR(20) NOT NULL DEFAULT 'user', `Text` LONGTEXT NOT NULL, `CreatedAt` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`Id`), INDEX `IX_ChatMessages_UserId` (`UserId`), CONSTRAINT `FK_ChatMessages_Users_UserId` FOREIGN KEY (`UserId`) REFERENCES `Users`(`Id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     };
     var count = 0;
     foreach (var sql in createStatements)
+    {
+        try { await db.Database.ExecuteSqlRawAsync(sql); count++; } catch { }
+    }
+    foreach (var sql in createCoreTables)
     {
         try { await db.Database.ExecuteSqlRawAsync(sql); count++; } catch { }
     }
