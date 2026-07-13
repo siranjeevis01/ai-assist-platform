@@ -52,11 +52,34 @@ namespace AiAgentBackend.Controllers
         public async Task<IActionResult> AddMember(int id, [FromBody] AddMemberRequest request)
         {
             var userId = GetUserId();
+            _logger.LogInformation("AddMember called by UserId={UserId} to TeamId={TeamId}, Email={Email}, Role={Role}", userId, id, request?.Email, request?.Role);
+
+            if (userId == 0)
+            {
+                _logger.LogWarning("AddMember: Could not resolve UserId from JWT claims");
+                return Unauthorized(new { error = "Invalid token" });
+            }
+
+            if (request == null || string.IsNullOrWhiteSpace(request.Email))
+            {
+                return BadRequest(new { error = "Email is required" });
+            }
+
             var targetUser = await _db.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-            if (targetUser == null) return BadRequest(new { error = "User not found" });
+            if (targetUser == null)
+            {
+                _logger.LogWarning("AddMember: User with email {Email} not found", request.Email);
+                return BadRequest(new { error = "User not found" });
+            }
 
             var result = await _teams.AddMemberAsync(userId, id, targetUser.Id, request.Role);
-            if (!result) return BadRequest(new { error = "Failed to add member" });
+            if (!result)
+            {
+                _logger.LogWarning("AddMember: Failed to add member. CallerUserId={UserId}, TeamId={TeamId}, TargetUserId={TargetUserId}", userId, id, targetUser.Id);
+                return BadRequest(new { error = "Failed to add member. You may not have permission or the user is already a member." });
+            }
+
+            _logger.LogInformation("AddMember: User {TargetUserId} added to Team {TeamId} by {UserId}", targetUser.Id, id, userId);
             return Ok(new { message = "Member added" });
         }
 
@@ -114,7 +137,13 @@ namespace AiAgentBackend.Controllers
             return Ok(new { message = $"Invitation sent to {request.Email}", invited = true, email = request.Email });
         }
 
-        private int GetUserId() => int.Parse(User.FindFirst("uid")?.Value ?? User.FindFirst("sub")?.Value ?? "0");
+        private int GetUserId()
+        {
+            var uidClaim = User.FindFirst("uid")?.Value ?? User.FindFirst("sub")?.Value;
+            if (int.TryParse(uidClaim, out var userId)) return userId;
+            _logger.LogWarning("GetUserId: Could not parse userId from claims. uid={Uid}, sub={Sub}", User.FindFirst("uid")?.Value, User.FindFirst("sub")?.Value);
+            return 0;
+        }
     }
 
     public class CreateTeamRequest

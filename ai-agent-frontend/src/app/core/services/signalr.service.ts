@@ -8,6 +8,8 @@ import { ChatMessage, TaskItem, CalendarEvent, SignalRUpdate } from '../models/m
 export class SignalRService implements OnDestroy {
   private hubConnection?: HubConnection;
   private isConnected = false;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 10;
 
   newMessageSignal = signal<ChatMessage | null>(null);
   taskUpdatedSignal = signal<TaskItem | null>(null);
@@ -29,7 +31,7 @@ export class SignalRService implements OnDestroy {
   }
 
   private tryConnect(): void {
-    setTimeout(() => this.startConnection(), 1000);
+    setTimeout(() => this.startConnection(), 2000);
   }
 
   async startConnection(): Promise<void> {
@@ -59,7 +61,10 @@ export class SignalRService implements OnDestroy {
     this.hubConnection.onclose(() => {
       this.isConnected = false;
       this.connectionStatus.set('disconnected');
-      setTimeout(() => this.startConnection(), 5000);
+      this.reconnectAttempts++;
+      if (this.reconnectAttempts < this.maxReconnectAttempts) {
+        setTimeout(() => this.startConnection(), Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000));
+      }
     });
 
     this.registerEvents();
@@ -67,11 +72,17 @@ export class SignalRService implements OnDestroy {
     try {
       await this.hubConnection.start();
       this.isConnected = true;
+      this.reconnectAttempts = 0;
       this.connectionStatus.set('connected');
       this.subscribeToUserUpdates();
     } catch {
+      this.reconnectAttempts++;
+      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        this.connectionStatus.set('error');
+        return;
+      }
       this.connectionStatus.set('error');
-      setTimeout(() => this.startConnection(), 10000);
+      setTimeout(() => this.startConnection(), Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000));
     }
   }
 
@@ -135,7 +146,7 @@ export class SignalRService implements OnDestroy {
     }
   }
 
-  ngOnDestroy(): void {
-    this.hubConnection?.stop();
+  async ngOnDestroy(): Promise<void> {
+    await this.hubConnection?.stop();
   }
 }

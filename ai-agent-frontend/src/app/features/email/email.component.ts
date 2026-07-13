@@ -1,6 +1,7 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { NgIf, NgFor, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 import { GmailEmail } from '../../core/models/models';
 import { ToastService } from '../../shared/toast/toast.service';
@@ -206,7 +207,7 @@ import { ToastService } from '../../shared/toast/toast.service';
     }
   `]
 })
-export class EmailComponent implements OnInit {
+export class EmailComponent implements OnInit, OnDestroy {
   emails = signal<GmailEmail[]>([]);
   filteredEmails = signal<GmailEmail[]>([]);
   loading = signal(false);
@@ -216,37 +217,37 @@ export class EmailComponent implements OnInit {
   selectedEmail = signal<GmailEmail | null>(null);
   searchQuery = '';
   composeData = { to: '', subject: '', body: '' };
+  private subs: Subscription[] = [];
 
   constructor(private api: ApiService, private toast: ToastService) {}
 
-  ngOnInit(): void {
-    this.checkStatus();
-  }
+  ngOnInit(): void { this.checkStatus(); }
+  ngOnDestroy(): void { this.subs.forEach(s => s.unsubscribe()); }
 
   checkStatus(): void {
-    this.api.getGmailStatus().subscribe({
+    this.subs.push(this.api.getGmailStatus().subscribe({
       next: (status) => {
         this.gmailConnected.set(status.connected);
         if (status.connected) this.loadEmails();
       },
       error: () => this.gmailConnected.set(false)
-    });
+    }));
   }
 
   connectGoogle(): void {
-    this.api.getGoogleConnectUrl().subscribe({
+    this.subs.push(this.api.getGoogleConnectUrl().subscribe({
       next: (res) => window.location.href = res.url,
       error: () => this.toast.error('Failed to get Google connect URL')
-    });
+    }));
   }
 
   loadEmails(): void {
     this.loading.set(true);
     const query = this.searchQuery || undefined;
-    this.api.getGmailEmails(query).subscribe({
+    this.subs.push(this.api.getGmailEmails(query).subscribe({
       next: (emails) => { this.emails.set(emails); this.filteredEmails.set(emails); this.loading.set(false); },
       error: () => { this.loading.set(false); this.toast.error('Failed to load emails'); }
-    });
+    }));
   }
 
   selectEmail(email: GmailEmail): void {
@@ -256,7 +257,7 @@ export class EmailComponent implements OnInit {
   sendEmail(): void {
     if (!this.composeData.to || !this.composeData.subject || !this.composeData.body) return;
     this.sending.set(true);
-    this.api.sendGmailEmail(this.composeData.to, this.composeData.subject, this.composeData.body).subscribe({
+    this.subs.push(this.api.sendGmailEmail(this.composeData.to, this.composeData.subject, this.composeData.body).subscribe({
       next: (res: any) => {
         this.showCompose.set(false);
         this.composeData = { to: '', subject: '', body: '' };
@@ -273,6 +274,6 @@ export class EmailComponent implements OnInit {
         }
       },
       error: () => { this.sending.set(false); this.toast.error('Failed to send email'); }
-    });
+    }));
   }
 }

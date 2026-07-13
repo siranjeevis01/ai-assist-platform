@@ -249,7 +249,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ) {
     effect(() => {
       const n = this.signalR.notificationSignal();
-      if (n) this.loadDashboardData();
+      if (n && (n.type === 'TaskCreated' || n.type === 'TaskUpdated' || n.type === 'EventCreated' || n.type === 'PreferenceUpdated')) {
+        this.loadDashboardData();
+      }
     });
   }
 
@@ -260,21 +262,27 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void { this.subs.forEach(s => s.unsubscribe()); }
 
   loadDashboardData(): void {
-    this.subs.push(this.api.getAnalytics().subscribe(data => {
-      this.analytics.set(data);
-      if (data.recentActivity) this.recentActivity.set(data.recentActivity);
+    this.subs.push(this.api.getAnalytics().subscribe({
+      next: data => { this.analytics.set(data); if (data.recentActivity) this.recentActivity.set(data.recentActivity); },
+      error: () => {}
     }));
-    this.subs.push(this.api.getStats().subscribe(stats => this.stats.set(stats)));
-    this.subs.push(this.api.getTasks().subscribe(tasks => this.recentTasks.set(tasks.slice(0, 5))));
-    this.subs.push(this.api.getEvents(new Date().toISOString()).subscribe(events => {
-      const today = new Date().toDateString();
-      this.todayEvents.set(events.filter(e => e.startUtc && new Date(e.startUtc).toDateString() === today).slice(0, 5));
+    this.subs.push(this.api.getStats().subscribe({ next: stats => this.stats.set(stats), error: () => {} }));
+    this.subs.push(this.api.getTasks().subscribe({ next: tasks => this.recentTasks.set(tasks.slice(0, 5)), error: () => {} }));
+    this.subs.push(this.api.getEvents(new Date().toISOString()).subscribe({
+      next: events => {
+        const today = new Date().toDateString();
+        this.todayEvents.set(events.filter(e => e.startUtc && new Date(e.startUtc).toDateString() === today).slice(0, 5));
+      },
+      error: () => {}
     }));
-    this.subs.push(this.api.getGoogleStatus().subscribe(s => this.googleConnected.set(s.connected)));
+    this.subs.push(this.api.getGoogleStatus().subscribe({ next: s => this.googleConnected.set(s.connected), error: () => {} }));
     this.loading.set(false);
   }
 
   handleTaskComplete(taskId: number): void {
-    this.subs.push(this.api.completeTask(taskId).subscribe(() => this.loadDashboardData()));
+    this.subs.push(this.api.completeTask(taskId).subscribe({
+      next: () => this.loadDashboardData(),
+      error: () => {}
+    }));
   }
 }

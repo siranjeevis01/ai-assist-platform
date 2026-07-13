@@ -1,6 +1,7 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnDestroy, signal } from '@angular/core';
 import { NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../shared/toast/toast.service';
 
@@ -154,7 +155,7 @@ import { ToastService } from '../../shared/toast/toast.service';
     }
   `]
 })
-export class VoiceComponent {
+export class VoiceComponent implements OnDestroy {
   isRecording = signal(false);
   processing = signal(false);
   transcript = signal('');
@@ -163,9 +164,16 @@ export class VoiceComponent {
   bars = Array.from({ length: 20 }, () => Math.random() * 25 + 8);
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];
-  private barInterval: any;
+  private barInterval: ReturnType<typeof setInterval> | null = null;
+  private subs: Subscription[] = [];
 
   constructor(private api: ApiService, private toast: ToastService) {}
+
+  ngOnDestroy(): void {
+    this.subs.forEach(s => s.unsubscribe());
+    if (this.barInterval) clearInterval(this.barInterval);
+    this.mediaRecorder?.stream.getTracks().forEach(t => t.stop());
+  }
 
   getStatusText(): string {
     if (this.isRecording()) return 'Listening... Click to stop';
@@ -209,27 +217,27 @@ export class VoiceComponent {
     const blob = new Blob(this.audioChunks, { type: 'audio/webm' });
     const file = new File([blob], 'recording.webm', { type: 'audio/webm' });
     this.processing.set(true);
-    this.api.transcribeAudio(file).subscribe({
+    this.subs.push(this.api.transcribeAudio(file).subscribe({
       next: (r) => { this.transcript.set(r.text); this.processing.set(false); this.sendTranscript(r.text); },
       error: () => { this.toast.error('Transcription failed'); this.processing.set(false); }
-    });
+    }));
   }
 
   sendTranscript(text: string): void {
     this.processing.set(true);
-    this.api.sendMessage(text).subscribe({
+    this.subs.push(this.api.sendMessage(text).subscribe({
       next: (r) => { this.result.set(r.result); this.processing.set(false); },
       error: () => { this.toast.error('Failed to process command'); this.processing.set(false); }
-    });
+    }));
   }
 
   sendCommand(): void {
     if (!this.manualText.trim()) return;
     this.processing.set(true);
-    this.api.sendMessage(this.manualText).subscribe({
+    this.subs.push(this.api.sendMessage(this.manualText).subscribe({
       next: (r) => { this.result.set(r.result); this.manualText = ''; this.processing.set(false); },
       error: () => { this.toast.error('Failed to process command'); this.processing.set(false); }
-    });
+    }));
   }
 
   quickCommand(text: string): void {
@@ -241,10 +249,10 @@ export class VoiceComponent {
     const file = event.target.files?.[0];
     if (!file) return;
     this.processing.set(true);
-    this.api.transcribeAudio(file).subscribe({
+    this.subs.push(this.api.transcribeAudio(file).subscribe({
       next: (r) => { this.transcript.set(r.text); this.processing.set(false); this.sendTranscript(r.text); },
       error: () => { this.toast.error('Transcription failed'); this.processing.set(false); }
-    });
+    }));
     event.target.value = '';
   }
 }

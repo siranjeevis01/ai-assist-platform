@@ -1,6 +1,7 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { NgIf, NgFor, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 import { AutomationRule } from '../../core/models/models';
 import { ToastService } from '../../shared/toast/toast.service';
@@ -195,7 +196,7 @@ import { ToastService } from '../../shared/toast/toast.service';
     }
   `]
 })
-export class AutomationComponent implements OnInit {
+export class AutomationComponent implements OnInit, OnDestroy {
   rules = signal<AutomationRule[]>([]);
   templates = signal<any[]>([]);
   loading = signal(true);
@@ -204,22 +205,27 @@ export class AutomationComponent implements OnInit {
 
   activeCount = signal(0);
   totalRuns = signal(0);
+  private subs: Subscription[] = [];
 
   constructor(private api: ApiService, private toast: ToastService) {}
 
   ngOnInit(): void {
     this.loadRules();
-    this.api.getAutomationTemplates().subscribe(t => this.templates.set(t));
+    this.subs.push(this.api.getAutomationTemplates().subscribe(t => this.templates.set(t)));
   }
+  ngOnDestroy(): void { this.subs.forEach(s => s.unsubscribe()); }
 
   loadRules(): void {
     this.loading.set(true);
-    this.api.getAutomationRules().subscribe(r => {
-      this.rules.set(r);
-      this.activeCount.set(r.filter(x => x.isActive).length);
-      this.totalRuns.set(r.reduce((sum, x) => sum + (x.runCount || 0), 0));
-      this.loading.set(false);
-    });
+    this.subs.push(this.api.getAutomationRules().subscribe({
+      next: r => {
+        this.rules.set(r);
+        this.activeCount.set(r.filter(x => x.isActive).length);
+        this.totalRuns.set(r.reduce((sum, x) => sum + (x.runCount || 0), 0));
+        this.loading.set(false);
+      },
+      error: () => { this.loading.set(false); this.toast.error('Failed to load automation rules'); }
+    }));
   }
 
   useTemplate(t: any): void {
@@ -235,24 +241,24 @@ export class AutomationComponent implements OnInit {
       triggerConfig: '{}',
       actionsJson: JSON.stringify([{ type: 'send_notification', config: { message: this.newRule.message || 'Automation triggered' }, order: 0 }])
     };
-    this.api.createAutomationRule(rule).subscribe({
+    this.subs.push(this.api.createAutomationRule(rule).subscribe({
       next: () => { this.showCreate.set(false); this.newRule = { name: '', triggerType: 'email_received', message: '' }; this.toast.success('Rule created'); this.loadRules(); },
       error: () => this.toast.error('Failed to create rule')
-    });
+    }));
   }
 
   toggleRule(rule: AutomationRule): void {
-    this.api.updateAutomationRule(rule.id, { isActive: !rule.isActive }).subscribe({
+    this.subs.push(this.api.updateAutomationRule(rule.id, { isActive: !rule.isActive }).subscribe({
       next: () => this.loadRules(),
       error: () => this.toast.error('Failed to update rule')
-    });
+    }));
   }
 
   deleteRule(id: number): void {
     if (!confirm('Delete this automation rule?')) return;
-    this.api.deleteAutomationRule(id).subscribe({
+    this.subs.push(this.api.deleteAutomationRule(id).subscribe({
       next: () => { this.toast.success('Rule deleted'); this.loadRules(); },
       error: () => this.toast.error('Failed to delete rule')
-    });
+    }));
   }
 }

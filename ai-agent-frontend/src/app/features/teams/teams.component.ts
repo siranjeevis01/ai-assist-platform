@@ -1,6 +1,7 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { NgIf, NgFor, NgClass, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 import { Team, TeamMember } from '../../core/models/models';
 import { ToastService } from '../../shared/toast/toast.service';
@@ -202,7 +203,7 @@ import { ToastService } from '../../shared/toast/toast.service';
     }
   `]
 })
-export class TeamsComponent implements OnInit {
+export class TeamsComponent implements OnInit, OnDestroy {
   teams = signal<Team[]>([]);
   members = signal<TeamMember[]>([]);
   loading = signal(true);
@@ -213,53 +214,55 @@ export class TeamsComponent implements OnInit {
   newTeamDesc = '';
   addMemberEmail = '';
   addMemberRole = 'Member';
+  private subs: Subscription[] = [];
 
   constructor(private api: ApiService, private toast: ToastService) {}
 
   ngOnInit(): void { this.loadTeams(); }
+  ngOnDestroy(): void { this.subs.forEach(s => s.unsubscribe()); }
 
   loadTeams(): void {
     this.loading.set(true);
-    this.api.getTeams().subscribe({ next: t => { this.teams.set(t); this.loading.set(false); }, error: () => this.loading.set(false) });
+    this.subs.push(this.api.getTeams().subscribe({ next: t => { this.teams.set(t); this.loading.set(false); }, error: () => { this.loading.set(false); this.toast.error('Failed to load teams'); } }));
   }
 
   createTeam(): void {
     if (!this.newTeamName.trim()) return;
-    this.api.createTeam({ name: this.newTeamName, description: this.newTeamDesc }).subscribe({
+    this.subs.push(this.api.createTeam({ name: this.newTeamName, description: this.newTeamDesc }).subscribe({
       next: () => { this.showCreate.set(false); this.newTeamName = ''; this.newTeamDesc = ''; this.toast.success('Team created'); this.loadTeams(); },
       error: () => this.toast.error('Failed to create team')
-    });
+    }));
   }
 
   selectTeam(team: Team): void {
     this.selectedTeam.set(team);
-    this.api.getTeam(team.id).subscribe({
+    this.subs.push(this.api.getTeam(team.id).subscribe({
       next: t => { this.selectedTeam.set(t); this.members.set(t.members || []); },
       error: () => this.toast.error('Failed to load team details')
-    });
+    }));
   }
 
   addMember(): void {
     if (!this.addMemberEmail.trim() || !this.selectedTeam()) return;
-    this.api.addTeamMember(this.selectedTeam()!.id, this.addMemberEmail, this.addMemberRole).subscribe({
+    this.subs.push(this.api.addTeamMember(this.selectedTeam()!.id, this.addMemberEmail, this.addMemberRole).subscribe({
       next: () => { this.toast.success('Member added'); this.addMemberEmail = ''; this.showAddMember.set(false); this.selectTeam(this.selectedTeam()!); },
       error: (e) => this.toast.error(e.error?.error || 'Failed to add member')
-    });
+    }));
   }
 
   removeMember(userId: number): void {
     if (!this.selectedTeam() || !confirm('Remove this member from the team?')) return;
-    this.api.removeTeamMember(this.selectedTeam()!.id, userId).subscribe({
+    this.subs.push(this.api.removeTeamMember(this.selectedTeam()!.id, userId).subscribe({
       next: () => { this.toast.success('Member removed'); this.selectTeam(this.selectedTeam()!); },
       error: (e) => this.toast.error(e.error?.error || 'Failed to remove member')
-    });
+    }));
   }
 
   deleteTeam(): void {
     if (!this.selectedTeam() || !confirm('Are you sure you want to delete this team permanently? This cannot be undone.')) return;
-    this.api.deleteTeam(this.selectedTeam()!.id).subscribe({
+    this.subs.push(this.api.deleteTeam(this.selectedTeam()!.id).subscribe({
       next: () => { this.toast.success('Team deleted'); this.selectedTeam.set(null); this.loadTeams(); },
       error: (e) => this.toast.error(e.error?.error || 'Failed to delete team')
-    });
+    }));
   }
 }

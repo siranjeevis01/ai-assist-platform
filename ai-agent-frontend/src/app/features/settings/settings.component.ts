@@ -230,7 +230,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   currentTime = signal('');
   private inited = false;
   private subs: Subscription[] = [];
-  private timeInterval: any;
+  private timeInterval: ReturnType<typeof setInterval> | null = null;
 
   profile = { name: '', phoneNumber: '', timezone: '' };
   pref = { workHours: '09:00-18:00', defaultDurationMinutes: 30, defaultBoard: 'default', defaultList: 'To Do', reminderPolicy: '30m-before' };

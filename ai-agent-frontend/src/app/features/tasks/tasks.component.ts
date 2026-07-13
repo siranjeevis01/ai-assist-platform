@@ -147,20 +147,23 @@ export class TasksComponent implements OnInit, OnDestroy {
   loadTasks(): void {
     this.loading.set(true);
     const status = this.filter() === 'all' ? '' : this.filter();
-    this.subs.push(this.api.getTasks(status).subscribe(tasks => {
-      this.tasks.set(tasks);
-      this.loading.set(false);
+    this.subs.push(this.api.getTasks(status).subscribe({
+      next: tasks => { this.tasks.set(tasks); this.loading.set(false); },
+      error: () => { this.loading.set(false); this.toast.error('Failed to load tasks'); }
     }));
   }
 
   createTask(): void {
     if (!this.newTask.title) return;
-    this.subs.push(this.api.createTask(this.newTask).subscribe(() => {
-      this.showNewTask.set(false);
-      this.newTask = { title: '', description: '', dueUtc: '', status: 'To Do', recurrenceRule: '' };
-      this.recurrenceOption = 'none';
-      this.toast.success('Task created');
-      this.loadTasks();
+    this.subs.push(this.api.createTask(this.newTask).subscribe({
+      next: () => {
+        this.showNewTask.set(false);
+        this.newTask = { title: '', description: '', dueUtc: '', status: 'To Do', recurrenceRule: '' };
+        this.recurrenceOption = 'none';
+        this.toast.success('Task created');
+        this.loadTasks();
+      },
+      error: () => this.toast.error('Failed to create task')
     }));
   }
 
@@ -175,13 +178,16 @@ export class TasksComponent implements OnInit, OnDestroy {
 
   toggleTaskStatus(id: number, event: any): void {
     const status = event.target.checked ? 'Done' : 'To Do';
-    this.subs.push(this.api.updateTask(id, { status }).subscribe(() => this.loadTasks()));
+    this.subs.push(this.api.updateTask(id, { status }).subscribe({
+      next: () => this.loadTasks(),
+      error: () => this.toast.error('Failed to update task')
+    }));
   }
 
   deleteTask(id: number): void {
-    this.subs.push(this.api.deleteTask(id).subscribe(() => {
-      this.toast.success('Task deleted');
-      this.loadTasks();
+    this.subs.push(this.api.deleteTask(id).subscribe({
+      next: () => { this.toast.success('Task deleted'); this.loadTasks(); },
+      error: () => this.toast.error('Failed to delete task')
     }));
   }
 }

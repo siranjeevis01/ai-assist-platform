@@ -41,7 +41,7 @@ interface ChatDisplay {
             </ul>
             <p>Try one of these commands or ask me anything!</p>
             <div class="quick-commands">
-              <button *ngFor="let cmd of quickCommands" class="quick-command" (click)="newMessage.set(cmd)">{{ cmd }}</button>
+              <button *ngFor="let cmd of quickCommands" class="quick-command" (click)="newMessage = cmd">{{ cmd }}</button>
             </div>
           </div>
 
@@ -66,7 +66,7 @@ interface ChatDisplay {
 
         <form (ngSubmit)="sendMessage()" class="chat-input">
           <input type="text" [(ngModel)]="newMessage" name="message" placeholder="Type your message..." [disabled]="loading()" />
-          <button type="submit" [disabled]="loading() || !newMessage().trim()">
+          <button type="submit" [disabled]="loading() || !newMessage.trim()">
             <span class="material-icons">send</span>
           </button>
         </form>
@@ -80,7 +80,7 @@ export class MessagesComponent implements OnInit, AfterViewChecked, OnDestroy {
   @ViewChild('messagesContainer') messagesContainer!: ElementRef;
 
   messages = signal<ChatDisplay[]>([]);
-  newMessage = signal('');
+  newMessage = '';
   loading = signal(false);
   private subs: Subscription[] = [];
 
@@ -106,21 +106,24 @@ export class MessagesComponent implements OnInit, AfterViewChecked, OnDestroy {
   }
 
   loadHistory(): void {
-    this.subs.push(this.api.getChatHistory().subscribe(msgs => {
-      this.messages.set(msgs.map(m => ({
-        text: m.text,
-        sender: m.role === 'assistant' ? 'bot' : 'user',
-        timestamp: new Date(m.createdAt)
-      })));
+    this.subs.push(this.api.getChatHistory().subscribe({
+      next: msgs => {
+        this.messages.set(msgs.map(m => ({
+          text: m.text,
+          sender: m.role === 'assistant' ? 'bot' : 'user',
+          timestamp: new Date(m.createdAt)
+        })));
+      },
+      error: () => this.toast.error('Failed to load chat history')
     }));
   }
 
   sendMessage(): void {
-    const text = this.newMessage().trim();
+    const text = this.newMessage.trim();
     if (!text) return;
 
     this.messages.update(msgs => [...msgs, { text, sender: 'user', timestamp: new Date() }]);
-    this.newMessage.set('');
+    this.newMessage = '';
     this.loading.set(true);
 
     this.subs.push(this.api.sendMessage(text).subscribe({

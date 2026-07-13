@@ -18,7 +18,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401 && !isRefreshing && !req.url.includes('/auth/refresh') && !req.url.includes('/auth/login') && !req.url.includes('/auth/register')) {
+      if (error.status === 401 && !isRefreshing && !req.url.includes('/Auth/refresh') && !req.url.includes('/Auth/login') && !req.url.includes('/Auth/register')) {
         isRefreshing = true;
         const refreshToken = localStorage.getItem('refresh_token');
         if (refreshToken) {

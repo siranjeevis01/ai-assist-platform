@@ -1,6 +1,7 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { NgIf, NgFor, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 import { DocumentInfo } from '../../core/models/models';
 import { ToastService } from '../../shared/toast/toast.service';
@@ -175,23 +176,25 @@ import { ToastService } from '../../shared/toast/toast.service';
     }
   `]
 })
-export class DocumentsComponent implements OnInit {
+export class DocumentsComponent implements OnInit, OnDestroy {
   documents = signal<DocumentInfo[]>([]);
   loading = signal(true);
   querying = signal(false);
   selectedDoc = signal<DocumentInfo | null>(null);
   globalQuery = '';
-  globalAnswer = '';
+  globalAnswer = signal('');
   docQuery = '';
-  docAnswer = '';
+  docAnswer = signal('');
+  private subs: Subscription[] = [];
 
   constructor(private api: ApiService, private toast: ToastService) {}
 
   ngOnInit(): void { this.loadDocs(); }
+  ngOnDestroy(): void { this.subs.forEach(s => s.unsubscribe()); }
 
   loadDocs(): void {
     this.loading.set(true);
-    this.api.getDocuments().subscribe({ next: d => { this.documents.set(d); this.loading.set(false); }, error: () => this.loading.set(false) });
+    this.subs.push(this.api.getDocuments().subscribe({ next: d => { this.documents.set(d); this.loading.set(false); }, error: () => { this.loading.set(false); this.toast.error('Failed to load documents'); } }));
   }
 
   onFileSelected(event: any): void {
@@ -207,24 +210,24 @@ export class DocumentsComponent implements OnInit {
   queryAll(): void {
     if (!this.globalQuery.trim()) return;
     this.querying.set(true);
-    this.api.queryAllDocuments(this.globalQuery).subscribe({ next: r => { this.globalAnswer = r.answer; this.querying.set(false); }, error: () => this.querying.set(false) });
+    this.subs.push(this.api.queryAllDocuments(this.globalQuery).subscribe({ next: r => { this.globalAnswer.set(r.answer); this.querying.set(false); }, error: () => { this.querying.set(false); this.toast.error('Query failed'); } }));
   }
 
   openQuery(doc: DocumentInfo): void {
     this.selectedDoc.set(doc);
-    this.docAnswer = '';
+    this.docAnswer.set('');
     this.docQuery = '';
   }
 
   queryDoc(): void {
     if (!this.docQuery.trim() || !this.selectedDoc()) return;
     this.querying.set(true);
-    this.api.queryDocument(this.selectedDoc()!.id, this.docQuery).subscribe({ next: r => { this.docAnswer = r.answer; this.querying.set(false); }, error: () => this.querying.set(false) });
+    this.subs.push(this.api.queryDocument(this.selectedDoc()!.id, this.docQuery).subscribe({ next: r => { this.docAnswer.set(r.answer); this.querying.set(false); }, error: () => { this.querying.set(false); this.toast.error('Query failed'); } }));
   }
 
   deleteDoc(id: number): void {
     if (!confirm('Delete this document permanently?')) return;
-    this.api.deleteDocument(id).subscribe({ next: () => { this.toast.success('Document deleted'); this.loadDocs(); }, error: () => this.toast.error('Failed to delete') });
+    this.subs.push(this.api.deleteDocument(id).subscribe({ next: () => { this.toast.success('Document deleted'); this.loadDocs(); }, error: () => this.toast.error('Failed to delete') }));
   }
 
   getDocIcon(type: string): string {

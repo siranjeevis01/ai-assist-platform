@@ -42,7 +42,7 @@ import { ToastService } from '../../shared/toast/toast.service';
         </div>
       </div>
 
-      <div class="google-sync-bar" *ngIf="calendarConnected() || !calendarConnected()">
+      <div class="google-sync-bar" *ngIf="calendarConnected()">
         <div class="sync-info">
           <span class="material-icons" style="color: #4285f4">event</span>
           <span>Google Calendar</span>
@@ -137,9 +137,9 @@ export class CalendarComponent implements OnInit, OnDestroy {
     this.loading.set(true);
     const today = new Date().toISOString();
     const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-    this.subs.push(this.api.getEvents(today, nextMonth).subscribe(events => {
-      this.events.set(events);
-      this.loading.set(false);
+    this.subs.push(this.api.getEvents(today, nextMonth).subscribe({
+      next: events => { this.events.set(events); this.loading.set(false); },
+      error: () => { this.loading.set(false); this.toast.error('Failed to load events'); }
     }));
   }
 
@@ -169,27 +169,25 @@ export class CalendarComponent implements OnInit, OnDestroy {
 
   createEvent(): void {
     if (!this.form.title) return;
-    this.subs.push(this.api.createEvent(this.form).subscribe(() => {
-      this.closeModal();
-      this.toast.success('Event created');
-      this.loadEvents();
+    this.subs.push(this.api.createEvent(this.form).subscribe({
+      next: () => { this.closeModal(); this.toast.success('Event created'); this.loadEvents(); },
+      error: () => this.toast.error('Failed to create event')
     }));
   }
 
   updateEvent(): void {
     const event = this.editingEvent();
     if (!event || !this.form.title) return;
-    this.subs.push(this.api.updateEvent(event.id, this.form).subscribe(() => {
-      this.closeModal();
-      this.toast.success('Event updated');
-      this.loadEvents();
+    this.subs.push(this.api.updateEvent(event.id, this.form).subscribe({
+      next: () => { this.closeModal(); this.toast.success('Event updated'); this.loadEvents(); },
+      error: () => this.toast.error('Failed to update event')
     }));
   }
 
   deleteEvent(id: number): void {
-    this.subs.push(this.api.deleteEvent(id).subscribe(() => {
-      this.toast.success('Event deleted');
-      this.loadEvents();
+    this.subs.push(this.api.deleteEvent(id).subscribe({
+      next: () => { this.toast.success('Event deleted'); this.loadEvents(); },
+      error: () => this.toast.error('Failed to delete event')
     }));
   }
 
